@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  student
+  fresh_graduate
+  job_seeker
+  other
+}
+
+enum Language {
+  id
+  en
+}
+
+enum TargetStatus {
+  active
+  archived
+}
+
+enum JobLevel {
+  intern
+  fresh_graduate
+  junior
+  mid_level
+}
+
+enum InterviewType {
+  hr
+  behavioral
+  technical
+  case
+  mixed
+}
+
+enum SessionMode {
+  practice
+  full_simulation
+}
+
+enum SessionStatus {
+  setup
+  active
+  completed
+  abandoned
+  failed
+}
+
+enum QuestionType {
+  hr
+  behavioral
+  technical
+  case
+  follow_up
+}
+
+enum SpeechRecognitionSource {
+  web_speech_api
+  manual
+}
+
+model User {
+  id                 String              @id @default(cuid())
+  name               String
+  email              String              @unique
+  passwordHash       String
+  status             UserStatus
+  defaultLanguage    Language            @default(id)
+  targetApplications TargetApplication[]
+  interviewSessions  InterviewSession[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model TargetApplication {
+  id                String             @id @default(cuid())
+  userId            String
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role              String
+  company           String?
+  industry          String
+  level             JobLevel
+  jobDescription    String?
+  skillRequirements String?
+  interviewType     InterviewType
+  language          Language
+  candidateSummary  String?
+  status            TargetStatus       @default(active)
+  sessions          InterviewSession[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId, status])
+}
+
+model InterviewSession {
+  id                     String            @id @default(cuid())
+  userId                 String
+  user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetApplicationId    String
+  targetApplication      TargetApplication @relation(fields: [targetApplicationId], references: [id], onDelete: Restrict)
+  mode                   SessionMode
+  status                 SessionStatus     @default(setup)
+  plannedQuestionCount   Int
+  completedQuestionCount Int               @default(0)
+  overallScore           Float?
+  turns                  InterviewTurn[]
+  report                 SessionReport?
+  startedAt              DateTime?
+  endedAt                DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@index([userId, status])
+  @@index([targetApplicationId])
+}
+
+model InterviewTurn {
+  id                      String                   @id @default(cuid())
+  sessionId               String
+  session                 InterviewSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  turnIndex               Int
+  questionText            String
+  questionType            QuestionType
+  answerTranscript        String?
+  durationSeconds         Int?
+  speechRecognitionSource SpeechRecognitionSource?
+  evaluation              AnswerEvaluation?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  @@unique([sessionId, turnIndex])
+  @@index([sessionId])
+}
+
+model AnswerEvaluation {
+  id                  String        @id @default(cuid())
+  turnId              String        @unique
+  turn                InterviewTurn @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  answerScore         Int
+  dimensionScores     Json
+  speechMetrics       Json
+  strengths           Json
+  improvements        Json
+  betterAnswerExample String
+  followUpQuestion    String?
+  rawModelOutput      Json?
+  createdAt           DateTime      @default(now())
+}
+
+model SessionReport {
+  id                    String           @id @default(cuid())
+  sessionId             String           @unique
+  session               InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  overallScore          Int
+  dimensionSummary      Json
+  speechSummary         Json
+  strengths             Json
+  improvementPriorities Json
+  recommendations       Json
+  createdAt             DateTime         @default(now())
+}
