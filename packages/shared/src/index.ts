@@ -86,6 +86,35 @@ export type SessionMode = 'practice' | 'full_simulation';
 
 export type SessionStatus = 'setup' | 'active' | 'completed' | 'abandoned' | 'failed';
 
+export type QuestionType = 'hr' | 'behavioral' | 'technical' | 'case' | 'follow_up';
+
+export type SpeechRecognitionSource = 'web_speech_api' | 'manual';
+
+export type SpeechPredictionOutput = {
+  deliveryQuality: number | null;
+  fluencyScore: number | null;
+  confidenceSignal: number | null;
+  speechPredictionLabel: string | null;
+  speechPredictionModelName: string | null;
+  speechPredictionModelVersion: string | null;
+};
+
+export type InterviewTurn = SpeechPredictionOutput & {
+  id: string;
+  sessionId: string;
+  turnIndex: number;
+  questionText: string;
+  questionType: QuestionType;
+  answerTranscript: string | null;
+  durationSeconds: number | null;
+  speechRecognitionSource: SpeechRecognitionSource | null;
+  speechRecognitionLanguage: string | null;
+  speechRecognitionRetryCount: number;
+  browserUserAgent: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type InterviewSession = {
   id: string;
   targetApplicationId: string;
@@ -97,12 +126,35 @@ export type InterviewSession = {
   updatedAt: string;
 };
 
+export type InterviewSessionDetail = InterviewSession & {
+  targetApplication: TargetApplication;
+  turns: InterviewTurn[];
+};
+
 export type CreateSessionPayload = {
   targetApplicationId: string;
   mode: SessionMode;
   plannedQuestionCount: number;
 };
 
-export type SessionDetailResponse = ApiResponse<{
+export type CreateSessionResponse = ApiResponse<{
   session: InterviewSession;
+}>;
+
+export type SessionDetailResponse = ApiResponse<{
+  session: InterviewSessionDetail;
+}>;
+
+export type SubmitAnswerPayload = {
+  answerTranscript: string;
+  durationSeconds: number;
+  speechRecognitionSource: SpeechRecognitionSource;
+  speechRecognitionLanguage?: string | null;
+  speechRecognitionRetryCount: number;
+  browserUserAgent?: string | null;
+};
+
+export type SubmitAnswerResponse = ApiResponse<{
+  session: InterviewSessionDetail;
+  turn: InterviewTurn;
 }>;

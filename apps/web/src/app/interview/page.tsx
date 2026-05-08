@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { requireAuth } from '@/lib/auth-server';
 import { cn } from '@/lib/cn';
-import { createSession, listTargets } from '@/lib/api-client';
+import { createSession, getSession, listTargets, startSession } from '@/lib/api-client';
+import { InterviewRoom } from './interview-room';
 import { SpeechCapabilityCheck } from './speech-capability-check';
 
 const modeOptions: Array<{
@@ -87,28 +88,6 @@ function TargetOption({ isSelected, target }: { isSelected: boolean; target: Tar
   );
 }
 
-function SessionReady({ sessionId }: { sessionId: string }) {
-  return (
-    <Card className="p-6">
-      <Badge tone="success">Session siap</Badge>
-      <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--foreground)]">
-        Setup interview berhasil dibuat
-      </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-        Session <span className="font-semibold text-[var(--foreground)]">{sessionId}</span> sudah
-        tersimpan dengan status setup. Langkah berikutnya adalah interview room yang menghasilkan
-        pertanyaan pertama dan mengelola state voice.
-      </p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Button href="/interview" variant="outline">
-          Buat Setup Baru
-        </Button>
-        <Button href="/targets">Kembali ke Target</Button>
-      </div>
-    </Card>
-  );
-}
-
 export default async function InterviewPage({
   searchParams,
 }: {
@@ -122,6 +101,42 @@ export default async function InterviewPage({
   const selectedTargetId =
     targets.find((target) => target.id === params.targetId)?.id ?? targets[0]?.id ?? null;
 
+  if (params.sessionId) {
+    const sessionResponse = await getSession(params.sessionId, { cookie: cookieHeader });
+    const startedResponse =
+      sessionResponse.data?.session.status === 'setup'
+        ? await startSession(params.sessionId, { cookie: cookieHeader })
+        : sessionResponse;
+
+    return (
+      <AppShell
+        activeHref="/interview"
+        description="Jawab pertanyaan dengan suara atau fallback teks manual."
+        title="Interview Room"
+        user={user}
+      >
+        {startedResponse.error ? (
+          <Card className="border-[#f4b8b8] bg-[#fff5f5] p-6">
+            <Badge tone="warning">Session error</Badge>
+            <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--danger)]">
+              Session tidak bisa dibuka
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+              {startedResponse.error.message}
+            </p>
+            <div className="mt-6">
+              <Button href="/interview" variant="outline">
+                Kembali ke Setup
+              </Button>
+            </div>
+          </Card>
+        ) : (
+          <InterviewRoom initialSession={startedResponse.data.session} />
+        )}
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell
       activeHref="/interview"
@@ -129,10 +144,7 @@ export default async function InterviewPage({
       title="Interview Setup"
       user={user}
     >
-      {params.sessionId ? (
-        <SessionReady sessionId={params.sessionId} />
-      ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
           <form action={createSessionAction} className="space-y-5">
             {params.error ? (
               <Card className="border-[#f4b8b8] bg-[#fff5f5] p-4 text-sm font-semibold text-[var(--danger)]">
@@ -263,8 +275,7 @@ export default async function InterviewPage({
               </p>
             </Card>
           </div>
-        </div>
-      )}
+      </div>
     </AppShell>
   );
 }

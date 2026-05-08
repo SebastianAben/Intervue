@@ -1,8 +1,11 @@
 import type {
   ApiResponse,
   AuthResponse,
+  CreateSessionResponse,
   CreateSessionPayload,
   SessionDetailResponse,
+  SubmitAnswerPayload,
+  SubmitAnswerResponse,
   TargetApplicationPayload,
   TargetDetailResponse,
   TargetListResponse,
@@ -115,9 +118,36 @@ export async function createSession(
   payload: CreateSessionPayload,
   { cookie }: { cookie?: string } = {},
 ) {
-  return apiRequest<NonNullable<SessionDetailResponse['data']>>('/sessions', {
+  return apiRequest<NonNullable<CreateSessionResponse['data']>>('/sessions', {
     method: 'POST',
     body: payload,
     cookie,
   });
+}
+
+export async function getSession(sessionId: string, { cookie }: { cookie?: string } = {}) {
+  return apiRequest<NonNullable<SessionDetailResponse['data']>>(`/sessions/${sessionId}`, {
+    cookie,
+  });
+}
+
+export async function startSession(sessionId: string, { cookie }: { cookie?: string } = {}) {
+  return apiRequest<NonNullable<SessionDetailResponse['data']>>(`/sessions/${sessionId}/start`, {
+    method: 'POST',
+    cookie,
+  });
+}
+
+export async function submitTurnAnswer(
+  sessionId: string,
+  turnId: string,
+  payload: SubmitAnswerPayload,
+) {
+  return apiRequest<NonNullable<SubmitAnswerResponse['data']>>(
+    `/sessions/${sessionId}/turns/${turnId}/answer`,
+    {
+      method: 'POST',
+      body: payload,
+    },
+  );
 }
