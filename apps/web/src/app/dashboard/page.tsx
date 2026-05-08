@@ -1,23 +1,66 @@
-import Link from 'next/link';
+import { AppShell } from '@/components/layout/app-shell';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ScoreMeter } from '@/components/voice/score-meter';
+import { StatusChip } from '@/components/voice/status-chip';
+import { requireAuth } from '@/lib/auth-server';
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const user = await requireAuth();
+
   return (
-    <main className="min-h-screen px-6 py-8">
-      <div className="mx-auto max-w-6xl">
-        <Link className="font-semibold text-[#0e5f55]" href="/">
-          Intervue
-        </Link>
-        <section className="mt-12 rounded-lg border border-[#d8ded8] bg-white p-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.08em] text-[#0e5f55]">
-            Dashboard
+    <AppShell
+      activeHref="/dashboard"
+      description="Ringkasan workspace latihan interview. Data masih placeholder untuk Phase 1."
+      title="Dashboard"
+      user={user}
+    >
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <Card className="p-6">
+          <Badge tone="primary">Belum ada target</Badge>
+          <h2 className="mt-5 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--foreground)]">
+            Buat target lamaran pertama
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+            Target lamaran membuat pertanyaan interview lebih relevan dengan posisi, perusahaan,
+            industri, dan skill yang ingin dilatih.
           </p>
-          <h1 className="mt-3 text-3xl font-semibold">Buat target lamaran pertama</h1>
-          <p className="mt-3 max-w-2xl text-[#52615c]">
-            App shell, target list, dan progress summary akan dibangun setelah fondasi Phase 0
-            stabil.
-          </p>
-        </section>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button href="/targets">Buat Target Lamaran</Button>
+            <Button href="/interview" variant="outline">
+              Latihan Cepat
+            </Button>
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-[var(--font-jakarta)] text-xl font-extrabold">Status sesi</h2>
+            <StatusChip status="ready" />
+          </div>
+          <div className="mt-6 space-y-5">
+            <ScoreMeter label="Kesiapan interview" value={0} />
+            <ScoreMeter label="Konsistensi latihan" value={0} />
+          </div>
+        </Card>
       </div>
-    </main>
+
+      <div className="mt-5 grid gap-5 md:grid-cols-3">
+        {[
+          ['Target aktif', '0', 'Tambahkan target sebelum simulasi penuh.'],
+          ['Sesi latihan', '0', 'History akan muncul setelah interview.'],
+          ['Report tersimpan', '0', 'Report dibuat saat sesi selesai.'],
+        ].map(([label, value, description]) => (
+          <Card className="p-5" key={label}>
+            <p className="text-sm font-bold text-[var(--muted)]">{label}</p>
+            <p className="mt-3 font-[var(--font-jakarta)] text-4xl font-extrabold text-[var(--primary)]">
+              {value}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{description}</p>
+          </Card>
+        ))}
+      </div>
+    </AppShell>
   );
 }

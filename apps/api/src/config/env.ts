@@ -6,6 +6,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
 });
 

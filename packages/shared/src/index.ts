@@ -25,3 +25,15 @@ export type ApiResponse<T> =
 export type HealthResponse = ApiResponse<{
   status: 'ok';
 }>;
+
+export type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+  status: 'student' | 'fresh_graduate' | 'job_seeker' | 'other';
+  defaultLanguage: 'id' | 'en';
+};
+
+export type AuthResponse = ApiResponse<{
+  user: AuthUser;
+}>;
