@@ -21,7 +21,14 @@ const navItems: AppNavItem[] = [
   { label: 'Pengaturan', href: '/settings', marker: 'S', icon: 'settings' },
 ];
 
-type SidebarIconName = 'analytics' | 'briefcase' | 'dashboard' | 'help' | 'history' | 'logout' | 'settings';
+type SidebarIconName =
+  | 'analytics'
+  | 'briefcase'
+  | 'dashboard'
+  | 'help'
+  | 'history'
+  | 'logout'
+  | 'settings';
 
 const desktopNavItems = navItems.filter((item) => item.href !== '/interview');
 
@@ -45,26 +52,26 @@ export function AppShell({
   children,
 }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-[var(--background)] lg:grid lg:h-screen lg:grid-cols-[260px_minmax(0,1fr)] lg:overflow-hidden">
-      <aside className="hidden min-h-screen flex-col bg-white p-4 shadow-[0_1px_1px_rgb(0_0_0_/_0.05)] lg:flex lg:h-screen lg:min-h-0">
+    <div className="min-h-[100dvh] bg-[var(--background)] lg:grid lg:h-[100dvh] lg:grid-cols-[280px_minmax(0,1fr)] lg:overflow-hidden">
+      <aside className="hidden min-h-[100dvh] flex-col border-r border-white/80 bg-white/72 p-4 shadow-[0_20px_70px_rgb(18_60_55_/_0.08)] backdrop-blur lg:flex lg:h-[100dvh] lg:min-h-0">
         <div className="w-full pb-6 pt-[7px]">
           <Link
-            className="block px-4 font-[var(--font-jakarta)] text-2xl font-semibold leading-[33.6px] text-[var(--primary)]"
+            className="block rounded-[var(--radius-sm)] px-4 py-2 font-[var(--font-jakarta)] text-2xl font-black leading-[33.6px] tracking-[-0.03em] text-[var(--primary)] transition-colors hover:bg-[rgb(18_60_55_/_0.06)]"
             href="/"
           >
             Intervue
           </Link>
         </div>
 
-        <div className="mb-6 flex h-[58px] w-full items-center rounded-[var(--radius-sm)] bg-[var(--surface-muted)] p-[9px]">
-          <div className="mr-2 grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white font-[var(--font-jakarta)] text-sm font-semibold text-[var(--primary)]">
+        <div className="mb-6 flex h-[64px] w-full items-center rounded-[var(--radius-md)] border border-white/80 bg-[var(--surface-muted)] p-[9px]">
+          <div className="mr-3 grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white font-[var(--font-jakarta)] text-sm font-black text-[var(--primary)] shadow-[0_8px_20px_rgb(18_60_55_/_0.08)]">
             {getInitials(user.name)}
           </div>
           <div className="min-w-0 overflow-hidden">
             <p className="truncate text-sm font-semibold leading-5 text-[var(--foreground)]">
               {user.name}
             </p>
-            <p className="truncate text-xs font-semibold leading-3 tracking-[0.05em] text-[var(--muted)]">
+            <p className="truncate text-xs font-semibold leading-3 text-[var(--muted)]">
               Persiapan interview
             </p>
           </div>
@@ -74,10 +81,10 @@ export function AppShell({
           {desktopNavItems.map((item) => (
             <Link
               className={cn(
-                'flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-normal leading-5 transition-colors',
+                'flex h-11 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-semibold leading-5 transition-all duration-300 active:translate-y-px',
                 activeHref === item.href
-                  ? 'bg-[var(--primary-600)] font-semibold text-white'
-                  : 'text-[var(--muted)] hover:bg-[var(--surface-muted)]',
+                  ? 'bg-[var(--primary)] text-white shadow-[0_12px_24px_rgb(18_60_55_/_0.14)]'
+                  : 'text-[var(--muted)] hover:bg-[rgb(18_60_55_/_0.07)] hover:text-[var(--foreground)]',
               )}
               href={item.href}
               key={item.href}
@@ -91,7 +98,7 @@ export function AppShell({
         <div className="w-full pt-2">
           <div className="flex w-full flex-col gap-4 border-t border-[#e5e5e5] pt-[17px]">
             <Link
-              className="flex h-[42px] w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] text-base font-semibold leading-[25.6px] text-white transition-colors hover:bg-[var(--primary-600)]"
+              className="flex h-[46px] w-full items-center justify-center rounded-[var(--radius-sm)] bg-[var(--primary)] text-base font-semibold leading-[25.6px] text-white shadow-[0_14px_30px_rgb(18_60_55_/_0.18)] transition-all duration-300 hover:bg-[var(--primary-600)] active:translate-y-px"
               href="/interview"
             >
               Latih Interview Baru
@@ -99,13 +106,13 @@ export function AppShell({
 
             <div className="flex w-full flex-col gap-1">
               <Link
-                className="flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-normal leading-5 text-[var(--muted)] transition-colors hover:bg-[var(--surface-muted)]"
+                className="flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-semibold leading-5 text-[var(--muted)] transition-colors hover:bg-[rgb(18_60_55_/_0.07)]"
                 href="/settings"
               >
                 <SidebarIcon name="help" />
                 Bantuan
               </Link>
-              <div className="flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-normal leading-5 text-[var(--muted)] transition-colors hover:bg-[var(--surface-muted)]">
+              <div className="flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-semibold leading-5 text-[var(--muted)] transition-colors hover:bg-[rgb(18_60_55_/_0.07)]">
                 <SidebarIcon name="logout" />
                 <LogoutButton
                   className="m-0 h-5 cursor-pointer border-0 bg-transparent p-0 text-left text-sm font-normal leading-5 text-inherit disabled:cursor-default disabled:opacity-55"
@@ -118,9 +125,9 @@ export function AppShell({
       </aside>
 
       <div className="min-w-0 pb-20 lg:h-screen lg:overflow-y-auto lg:pb-0">
-        <header className="sticky top-0 z-20 border-b border-[var(--border)] bg-[rgb(248_250_249_/_0.92)] px-5 py-4 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 border-b border-white/80 bg-[rgb(245_247_244_/_0.9)] px-5 py-4 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
-            <Link className="text-xl font-extrabold text-[var(--primary)]" href="/">
+            <Link className="text-xl font-black tracking-[-0.03em] text-[var(--primary)]" href="/">
               Intervue
             </Link>
             <Button href="/interview" size="sm">
@@ -133,14 +140,11 @@ export function AppShell({
         <main className={cn('mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:py-10', mainClassName)}>
           {showPageHeader ? (
             <header className="mb-8">
-              <p className="text-sm font-bold uppercase tracking-[0.08em] text-[var(--primary-600)]">
-                Workspace
-              </p>
-              <h1 className="mt-2 font-[var(--font-jakarta)] text-3xl font-extrabold text-[var(--foreground)] sm:text-4xl">
+              <h1 className="font-[var(--font-jakarta)] text-4xl font-black leading-none tracking-[-0.035em] text-[var(--foreground)] sm:text-5xl">
                 {title}
               </h1>
               {description ? (
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                <p className="mt-4 max-w-2xl text-sm leading-6 text-[var(--muted)]">
                   {description}
                 </p>
               ) : null}
@@ -152,12 +156,12 @@ export function AppShell({
 
       <nav
         aria-label="Navigasi aplikasi mobile"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-[var(--border)] bg-white lg:hidden"
+        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t border-white/80 bg-white/90 shadow-[0_-12px_34px_rgb(18_60_55_/_0.08)] backdrop-blur lg:hidden"
       >
         {navItems.map((item) => (
           <Link
             className={cn(
-              'flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-bold',
+              'flex h-16 flex-col items-center justify-center gap-1 text-[10px] font-bold transition-colors',
               activeHref === item.href ? 'text-[var(--primary-600)]' : 'text-[var(--muted)]',
             )}
             href={item.href}
@@ -167,7 +171,7 @@ export function AppShell({
               aria-hidden="true"
               className={cn(
                 'grid h-6 w-6 place-items-center rounded-full text-[10px]',
-                activeHref === item.href ? 'bg-[#d7ece8]' : 'bg-[var(--surface-muted)]',
+                activeHref === item.href ? 'bg-[#dceee7]' : 'bg-[var(--surface-muted)]',
               )}
             >
               {item.marker}

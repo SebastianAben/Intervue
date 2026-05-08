@@ -9,34 +9,46 @@ export type AuthLayoutProps = {
 
 export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   return (
-    <main className="grid min-h-screen bg-[var(--background)] lg:grid-cols-[minmax(0,0.92fr)_minmax(520px,1fr)]">
+    <main className="grid min-h-[100dvh] bg-[var(--background)] lg:grid-cols-[minmax(0,0.92fr)_minmax(520px,1fr)]">
       <section className="relative hidden overflow-hidden bg-[var(--primary)] p-10 text-white lg:flex lg:flex-col lg:justify-between">
-        <a className="text-2xl font-extrabold" href="/">
+        <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/intervue-auth/1400/1200')] bg-cover bg-center opacity-20 grayscale contrast-125" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_18%,rgb(201_214_107_/_0.35),transparent_28rem),linear-gradient(135deg,rgb(18_60_55_/_0.82),rgb(18_60_55_/_0.96))]" />
+        <a className="relative text-2xl font-black tracking-[-0.03em]" href="/">
           Intervue
         </a>
-        <div className="max-w-xl">
-          <p className="text-sm font-bold uppercase tracking-[0.12em] text-[var(--primary-muted)]">
+        <div className="relative max-w-xl">
+          <p className="text-sm font-semibold text-[var(--primary-muted)]">
             Latihan interview berbasis suara
           </p>
-          <blockquote className="mt-6 font-[var(--font-jakarta)] text-4xl font-bold leading-tight">
-            “Intervue membantu saya latihan menjawab dengan struktur yang lebih jelas sebelum
-            interview sesungguhnya.”
+          <blockquote className="mt-6 font-[var(--font-jakarta)] text-5xl font-black leading-[0.98] tracking-[-0.04em]">
+            Jawaban yang siap terdengar berbeda saat diucapkan.
           </blockquote>
-          <p className="mt-6 text-sm font-semibold text-[#d7ece8]">Nadia, Fresh Graduate</p>
+          <p className="mt-6 max-w-md text-sm leading-6 text-[#d7ece8]">
+            Simpan target lamaran, latih jawaban lewat suara, dan baca feedback yang langsung bisa
+            dipakai.
+          </p>
         </div>
-        <div className="absolute -right-24 bottom-20 h-64 w-64 rounded-full border border-white/20" />
-        <div className="absolute right-24 top-24 h-20 w-20 rounded-full bg-[var(--accent)]/80" />
+        <div className="relative grid grid-cols-3 gap-3">
+          {['Target', 'Voice', 'Report'].map((item) => (
+            <div
+              className="rounded-[var(--radius-md)] border border-white/10 bg-white/8 p-4 text-sm font-semibold text-white/78 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.12)]"
+              key={item}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
       </section>
-      <section className="flex min-h-screen items-center justify-center bg-[var(--background)] px-5 py-10">
+      <section className="flex min-h-[100dvh] items-center justify-center bg-[var(--background)] px-5 py-10">
         <div className="w-full max-w-[440px]">
           <a
-            className="mb-10 inline-block text-xl font-extrabold text-[var(--primary)] lg:hidden"
+            className="mb-10 inline-block text-xl font-black tracking-[-0.03em] text-[var(--primary)] lg:hidden"
             href="/"
           >
             Intervue
           </a>
           <Card className="border-transparent bg-transparent p-0 shadow-none">
-            <h1 className="font-[var(--font-jakarta)] text-3xl font-extrabold text-[var(--foreground)]">
+            <h1 className="font-[var(--font-jakarta)] text-4xl font-black leading-none tracking-[-0.035em] text-[var(--foreground)]">
               {title}
             </h1>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{subtitle}</p>

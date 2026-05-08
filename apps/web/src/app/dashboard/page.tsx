@@ -23,19 +23,22 @@ export default async function DashboardPage() {
       user={user}
     >
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <Card className="p-6">
+        <Card className="relative overflow-hidden rounded-[var(--radius-lg)] p-7">
+          <div className="absolute right-0 top-0 h-44 w-44 translate-x-16 -translate-y-16 rounded-full bg-[var(--accent)]/30 blur-3xl" />
           <Badge tone={activeTargets.length > 0 ? 'success' : 'primary'}>
             {activeTargets.length > 0 ? `${activeTargets.length} target aktif` : 'Belum ada target'}
           </Badge>
-          <h2 className="mt-5 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--foreground)]">
-            {activeTargets.length > 0 ? 'Lanjutkan latihan berbasis target' : 'Buat target lamaran pertama'}
+          <h2 className="relative mt-5 max-w-2xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.03em] text-[var(--foreground)]">
+            {activeTargets.length > 0
+              ? 'Lanjutkan latihan berbasis target'
+              : 'Buat target lamaran pertama'}
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+          <p className="relative mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {activeTargets.length > 0
               ? 'Pilih target lamaran aktif saat memulai sesi agar pertanyaan interview tetap relevan dengan posisi yang diincar.'
               : 'Target lamaran membuat pertanyaan interview lebih relevan dengan posisi, perusahaan, industri, dan skill yang ingin dilatih.'}
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="relative mt-7 flex flex-wrap gap-3">
             <Button href="/targets">
               {activeTargets.length > 0 ? 'Kelola Target Lamaran' : 'Buat Target Lamaran'}
             </Button>
@@ -45,9 +48,11 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="rounded-[var(--radius-lg)] p-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-[var(--font-jakarta)] text-xl font-extrabold">Status sesi</h2>
+            <h2 className="font-[var(--font-jakarta)] text-xl font-black tracking-[-0.02em]">
+              Status sesi
+            </h2>
             <StatusChip status="ready" />
           </div>
           <div className="mt-6 space-y-5">
@@ -57,7 +62,7 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-3">
+      <div className="mt-6 overflow-hidden rounded-[var(--radius-lg)] border border-white/80 bg-white/72 shadow-[var(--shadow-card)] backdrop-blur">
         {[
           [
             'Target aktif',
@@ -69,13 +74,16 @@ export default async function DashboardPage() {
           ['Sesi latihan', '0', 'History akan muncul setelah interview.'],
           ['Report tersimpan', '0', 'Report dibuat saat sesi selesai.'],
         ].map(([label, value, description]) => (
-          <Card className="p-5" key={label}>
+          <div
+            className="grid gap-3 border-b border-[var(--border)] p-5 last:border-b-0 sm:grid-cols-[180px_90px_1fr] sm:items-center"
+            key={label}
+          >
             <p className="text-sm font-bold text-[var(--muted)]">{label}</p>
-            <p className="mt-3 font-[var(--font-jakarta)] text-4xl font-extrabold text-[var(--primary)]">
+            <p className="font-[var(--font-geist-mono)] text-4xl font-semibold tabular-nums text-[var(--primary)]">
               {value}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{description}</p>
-          </Card>
+            <p className="text-sm leading-6 text-[var(--muted)]">{description}</p>
+          </div>
         ))}
       </div>
 
@@ -89,9 +97,12 @@ export default async function DashboardPage() {
               Lihat semua
             </Button>
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {recentTargets.map((target) => (
-              <Card className="p-5" key={target.id}>
+              <Card
+                className="rounded-[var(--radius-lg)] p-5 transition-transform duration-300 hover:-translate-y-1"
+                key={target.id}
+              >
                 <div className="flex flex-wrap gap-2">
                   <Badge tone="success">Aktif</Badge>
                   <Badge>{target.interviewType}</Badge>

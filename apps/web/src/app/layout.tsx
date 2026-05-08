@@ -1,21 +1,29 @@
 import type { Metadata } from 'next';
-import { Manrope, Plus_Jakarta_Sans } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Intervue',
+  title: {
+    default: 'Intervue',
+    template: '%s | Intervue',
+  },
   description: 'Latihan interview kerja dengan AI interviewer berbasis suara.',
+  openGraph: {
+    title: 'Intervue',
+    description: 'Latihan interview kerja dengan AI interviewer berbasis suara.',
+    type: 'website',
+  },
 };
 
-const manrope = Manrope({
+const geist = Geist({
   subsets: ['latin'],
-  variable: '--font-manrope',
+  variable: '--font-geist',
   display: 'swap',
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-jakarta',
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
@@ -26,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${manrope.variable} ${jakarta.variable}`}>{children}</body>
+      <body className={`${geist.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
 }
