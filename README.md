@@ -23,7 +23,7 @@ cache           Product and architecture documents
 
 - Node.js
 - pnpm
-- PostgreSQL lokal
+- Docker atau OrbStack untuk PostgreSQL lokal berbasis container
 
 ## Setup Lokal
 
@@ -40,20 +40,20 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 ```
 
-3. Buat database lokal dan sesuaikan `DATABASE_URL` di `apps/api/.env`.
+3. Jalankan PostgreSQL container.
 
 ```bash
-createdb intervue
+docker compose up -d postgres
 ```
+
+Database development berjalan di port host `5433` agar tidak bentrok dengan PostgreSQL lokal lain.
+Pastikan `DATABASE_URL` di `apps/api/.env` memakai:
 
 ```text
-DATABASE_URL="postgresql://YOUR_DB_USER:YOUR_DB_PASSWORD@localhost:5432/intervue"
+DATABASE_URL="postgresql://intervue:intervue@localhost:5433/intervue"
 ```
 
-Jika PostgreSQL lokal memakai user macOS tanpa password, gunakan format
-`postgresql://YOUR_LOCAL_USER@localhost:5432/intervue`.
-
-4. Generate Prisma client dan jalankan migration.
+4. Generate Prisma client dan jalankan migration ke database Docker.
 
 ```bash
 pnpm db:generate
@@ -68,6 +68,23 @@ pnpm dev
 
 Frontend berjalan di `http://localhost:3000`.
 Backend berjalan di `http://localhost:4000/api`.
+
+## Database Docker
+
+Project ini memakai PostgreSQL container dengan named volume `intervue_postgres_data`.
+Data tetap tersimpan saat container dihentikan biasa.
+
+```bash
+docker compose down
+```
+
+Jika ingin reset database development dan menghapus seluruh data container:
+
+```bash
+docker compose down -v
+docker compose up -d postgres
+pnpm db:migrate
+```
 
 ## Commands
 
@@ -94,7 +111,7 @@ NEXT_PUBLIC_API_BASE_URL="http://localhost:4000/api"
 Backend owns secrets:
 
 ```text
-DATABASE_URL="postgresql://..."
+DATABASE_URL="postgresql://intervue:intervue@localhost:5433/intervue"
 JWT_SECRET="replace-with-a-long-random-secret"
 GEMINI_API_KEY="replace-when-ai-phase-starts"
 CORS_ORIGIN="http://localhost:3000"

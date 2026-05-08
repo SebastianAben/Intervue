@@ -8,12 +8,14 @@ import { logout } from '@/lib/api-client';
 export type LogoutButtonProps = {
   className?: string;
   size?: 'sm' | 'md';
+  unstyled?: boolean;
   variant?: 'ghost' | 'outline';
 };
 
 export function LogoutButton({
   className,
   size = 'sm',
+  unstyled = false,
   variant = 'ghost',
 }: LogoutButtonProps) {
   const router = useRouter();
@@ -24,6 +26,14 @@ export function LogoutButton({
     await logout();
     router.push('/login');
     router.refresh();
+  }
+
+  if (unstyled) {
+    return (
+      <button className={className} disabled={isLoading} onClick={handleLogout} type="button">
+        Keluar
+      </button>
+    );
   }
 
   return (

@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: intervue-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: intervue
+      POSTGRES_USER: intervue
+      POSTGRES_PASSWORD: intervue
+    ports:
+      - "5433:5432"
+    volumes:
+      - intervue_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intervue -d intervue"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  intervue_postgres_data:

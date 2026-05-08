@@ -121,21 +121,27 @@ model InterviewSession {
 }
 
 model InterviewTurn {
-  id                          String                   @id @default(cuid())
-  sessionId                   String
-  session                     InterviewSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  turnIndex                   Int
-  questionText                String
-  questionType                QuestionType
-  answerTranscript            String?
-  durationSeconds             Int?
-  speechRecognitionSource     SpeechRecognitionSource?
-  speechRecognitionLanguage   String?
-  speechRecognitionRetryCount Int                      @default(0)
-  browserUserAgent            String?
-  evaluation                  AnswerEvaluation?
-  createdAt                   DateTime                 @default(now())
-  updatedAt                   DateTime                 @updatedAt
+  id                           String                   @id @default(cuid())
+  sessionId                    String
+  session                      InterviewSession         @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  turnIndex                    Int
+  questionText                 String
+  questionType                 QuestionType
+  answerTranscript             String?
+  durationSeconds              Int?
+  speechRecognitionSource      SpeechRecognitionSource?
+  speechRecognitionLanguage    String?
+  speechRecognitionRetryCount  Int                      @default(0)
+  browserUserAgent             String?
+  deliveryQuality              Float?
+  fluencyScore                 Float?
+  confidenceSignal             Float?
+  speechPredictionLabel        String?
+  speechPredictionModelName    String?
+  speechPredictionModelVersion String?
+  evaluation                   AnswerEvaluation?
+  createdAt                    DateTime                 @default(now())
+  updatedAt                    DateTime                 @updatedAt
 
   @@unique([sessionId, turnIndex])
   @@index([sessionId])
