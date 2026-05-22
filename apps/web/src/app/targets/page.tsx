@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/cn';
 import { requireAuth } from '@/lib/auth-server';
 import { archiveTarget, createTarget, listTargets, updateTarget } from '@/lib/api-client';
+import { CvSummaryField } from './cv-summary-field';
 
 const levelOptions = [
   { label: 'Internship', value: 'intern' },
@@ -214,18 +215,7 @@ function TargetForm({
           />
         </Field>
 
-        <Field label="CV / Ringkasan Pengalaman">
-          <textarea
-            className="min-h-[144px] w-full resize-y rounded-[12px] border-2 border-dashed border-[var(--input-border)] bg-[var(--background)] px-5 py-5 text-center text-sm font-medium text-[var(--foreground)] transition-colors placeholder:text-[var(--muted)] focus:border-[var(--primary-600)]"
-            defaultValue={target?.candidateSummary ?? ''}
-            name="candidateSummary"
-            placeholder="Tulis ringkasan pengalaman, proyek, atau pencapaian yang relevan di sini."
-          />
-          <p className="mt-2 text-center text-xs leading-4 text-[var(--muted)]">
-            AI akan membaca ringkasan ini untuk menyesuaikan pertanyaan seputar pengalaman masa
-            lalu.
-          </p>
-        </Field>
+        <CvSummaryField defaultValue={target?.candidateSummary} />
 
         <div className="flex justify-end gap-4 border-t border-[#e5e5e5] pt-[17px]">
           <Button href="/targets" type="button" variant="ghost">
@@ -277,7 +267,26 @@ function Separator() {
   return <div className="h-px w-full bg-[#e5e5e5]" />;
 }
 
+function hasValue(value: string | null | undefined) {
+  return Boolean(value?.trim());
+}
+
+function targetCompleteness(target: TargetApplication) {
+  const fields = [
+    hasValue(target.role),
+    hasValue(target.company),
+    hasValue(target.industry),
+    hasValue(target.jobDescription),
+    hasValue(target.skillRequirements),
+    hasValue(target.candidateSummary),
+  ];
+
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
+}
+
 function TargetCard({ target }: { target: TargetApplication }) {
+  const completeness = targetCompleteness(target);
+
   return (
     <Card className="p-4 shadow-[0_2px_5px_rgb(0_0_0_/_0.02)]">
       <div className="flex flex-col gap-4">
@@ -297,8 +306,24 @@ function TargetCard({ target }: { target: TargetApplication }) {
           <p className="mt-1 text-sm leading-[22.4px] text-[var(--muted)]">
             {[target.company, target.industry].filter(Boolean).join(' • ') || target.level}
           </p>
-          <div className="mt-5 h-1.5 overflow-hidden rounded-full bg-[var(--surface-muted)]">
-            <div className="h-full w-[72%] rounded-full bg-[var(--primary)]" />
+          <div className="mt-5">
+            <div className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold text-[var(--muted)]">
+              <span>Kelengkapan target</span>
+              <span className="text-[var(--foreground)]">{completeness}%</span>
+            </div>
+            <div
+              aria-label={`Kelengkapan target ${completeness} persen`}
+              aria-valuemax={100}
+              aria-valuemin={0}
+              aria-valuenow={completeness}
+              className="h-1.5 overflow-hidden rounded-full bg-[var(--surface-muted)]"
+              role="meter"
+            >
+              <div
+                className="h-full rounded-full bg-[var(--primary)]"
+                style={{ width: `${completeness}%` }}
+              />
+            </div>
           </div>
         </div>
         <Button

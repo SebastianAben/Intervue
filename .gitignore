@@ -14,4 +14,8 @@ coverage
 
 apps/api/prisma/dev.db
 
-cache
+cache/
+
+# ML datasets
+ml/nonverbal/data/raw/*
+!ml/nonverbal/data/raw/.gitkeep

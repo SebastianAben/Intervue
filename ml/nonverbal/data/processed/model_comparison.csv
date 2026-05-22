@@ -1,0 +1,4 @@
+model_name,output_type,threshold_strategy,validation_macro_f1,test_macro_f1,test_accuracy,test_mae,notes
+RandomForestClassifier,label,train_tertile,0.44450681065070813,0.4174252231094906,0.41333333333333333,,Balanced classifier experiment; not exported as primary model.
+RandomForestRegressor,score_0_100,static_40_75,0.349737306995205,0.36189993238674784,0.7266666666666667,0.11208784534984753,Legacy fixed thresholds; kept as baseline only.
+RandomForestRegressor,score_0_100,train_tertile,0.3321384788051455,0.34534154262840827,0.4033333333333333,0.11208784534984753,Recommended label interpretation for the exported regressor score.

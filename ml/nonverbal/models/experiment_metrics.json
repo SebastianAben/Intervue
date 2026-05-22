@@ -1,0 +1,306 @@
+{
+  "purpose": "Labeling experiments only; production MVP uses regressor score_0_100.",
+  "labelThresholds": {
+    "lowThresholdRaw": 0.4205607476635514,
+    "highThresholdRaw": 0.5607476635514018,
+    "lowThresholdScore": 42.05607476635514,
+    "highThresholdScore": 56.074766355140184
+  },
+  "classifierSearchResults": [
+    {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.39235619984088405
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.41944444444444445
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.44100326740301715
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 12,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.3779710645577845
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 12,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4106381362820333
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 12,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.43477873977873976
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4278044852838605
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": null,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.39709704306780597
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": null,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.43748695264334997
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 8,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.40946961887503575
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 8,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.44450681065070813
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 8,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4411526911526911
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 12,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.41349325337331333
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 12,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4323985193550411
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": 12,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4354301868239922
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4175082957542755
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": null,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4209728469098784
+    },
+    {
+      "n_estimators": 300,
+      "max_depth": null,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4352647671475826
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 8,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.42589856626553874
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 8,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4419295638166279
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 8,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4441884438946446
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 12,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4059325892609251
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 12,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4327867148826874
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": 12,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.43936348607296455
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": null,
+      "min_samples_leaf": 1,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.40087781343386725
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": null,
+      "min_samples_leaf": 3,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.4243415404323778
+    },
+    {
+      "n_estimators": 500,
+      "max_depth": null,
+      "min_samples_leaf": 5,
+      "class_weight": "balanced",
+      "validation_macro_f1": 0.43674435379588195
+    }
+  ],
+  "modelComparison": [
+    {
+      "model_name": "RandomForestClassifier",
+      "output_type": "label",
+      "threshold_strategy": "train_tertile",
+      "validation_macro_f1": 0.44450681065070813,
+      "test_macro_f1": 0.4174252231094906,
+      "test_accuracy": 0.41333333333333333,
+      "test_mae": null,
+      "notes": "Balanced classifier experiment; not exported as primary model."
+    },
+    {
+      "model_name": "RandomForestRegressor",
+      "output_type": "score_0_100",
+      "threshold_strategy": "static_40_75",
+      "validation_macro_f1": 0.349737306995205,
+      "test_macro_f1": 0.36189993238674784,
+      "test_accuracy": 0.7266666666666667,
+      "test_mae": 0.11208784534984753,
+      "notes": "Legacy fixed thresholds; kept as baseline only."
+    },
+    {
+      "model_name": "RandomForestRegressor",
+      "output_type": "score_0_100",
+      "threshold_strategy": "train_tertile",
+      "validation_macro_f1": 0.3321384788051455,
+      "test_macro_f1": 0.34534154262840827,
+      "test_accuracy": 0.4033333333333333,
+      "test_mae": 0.11208784534984753,
+      "notes": "Recommended label interpretation for the exported regressor score."
+    }
+  ],
+  "classificationSummary": [
+    {
+      "evaluation": "regressor_static_40_75",
+      "label": "low",
+      "precision": 0.5714285714285714,
+      "recall": 0.16,
+      "f1": 0.25,
+      "support": 75
+    },
+    {
+      "evaluation": "regressor_static_40_75",
+      "label": "medium",
+      "precision": 0.7383512544802867,
+      "recall": 0.9626168224299065,
+      "f1": 0.8356997971602435,
+      "support": 214
+    },
+    {
+      "evaluation": "regressor_static_40_75",
+      "label": "high",
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "support": 11
+    },
+    {
+      "evaluation": "regressor_train_tertile",
+      "label": "low",
+      "precision": 0.5357142857142857,
+      "recall": 0.17647058823529413,
+      "f1": 0.26548672566371684,
+      "support": 85
+    },
+    {
+      "evaluation": "regressor_train_tertile",
+      "label": "medium",
+      "precision": 0.3918918918918919,
+      "recall": 0.7310924369747899,
+      "f1": 0.5102639296187683,
+      "support": 119
+    },
+    {
+      "evaluation": "regressor_train_tertile",
+      "label": "high",
+      "precision": 0.38,
+      "recall": 0.19791666666666666,
+      "f1": 0.2602739726027397,
+      "support": 96
+    },
+    {
+      "evaluation": "classifier_train_tertile",
+      "label": "low",
+      "precision": 0.5223880597014925,
+      "recall": 0.4117647058823529,
+      "f1": 0.4605263157894737,
+      "support": 85
+    },
+    {
+      "evaluation": "classifier_train_tertile",
+      "label": "medium",
+      "precision": 0.4431818181818182,
+      "recall": 0.3277310924369748,
+      "f1": 0.37681159420289856,
+      "support": 119
+    },
+    {
+      "evaluation": "classifier_train_tertile",
+      "label": "high",
+      "precision": 0.3448275862068966,
+      "recall": 0.5208333333333334,
+      "f1": 0.4149377593360996,
+      "support": 96
+    }
+  ]
+}

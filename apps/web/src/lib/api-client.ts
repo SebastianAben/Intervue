@@ -3,6 +3,8 @@ import type {
   AuthResponse,
   CreateSessionResponse,
   CreateSessionPayload,
+  ParseCvResponse,
+  ReportDetailResponse,
   SessionDetailResponse,
   SubmitAnswerPayload,
   SubmitAnswerResponse,
@@ -114,6 +116,17 @@ export async function archiveTarget(targetId: string, { cookie }: { cookie?: str
   });
 }
 
+export async function parseCv(formData: FormData) {
+  const response = await fetch(`${apiBaseUrl}/targets/parse-cv`, {
+    method: 'POST',
+    body: formData,
+    cache: 'no-store',
+    credentials: 'include',
+  });
+
+  return (await response.json()) as ParseCvResponse;
+}
+
 export async function createSession(
   payload: CreateSessionPayload,
   { cookie }: { cookie?: string } = {},
@@ -127,6 +140,12 @@ export async function createSession(
 
 export async function getSession(sessionId: string, { cookie }: { cookie?: string } = {}) {
   return apiRequest<NonNullable<SessionDetailResponse['data']>>(`/sessions/${sessionId}`, {
+    cookie,
+  });
+}
+
+export async function getReport(sessionId: string, { cookie }: { cookie?: string } = {}) {
+  return apiRequest<NonNullable<ReportDetailResponse['data']>>(`/reports/${sessionId}`, {
     cookie,
   });
 }
