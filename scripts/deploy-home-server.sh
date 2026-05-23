@@ -6,12 +6,14 @@ workspace="${GITHUB_WORKSPACE:-$(pwd)}"
 compose_file="deploy/home-server/docker-compose.server.yml"
 env_example_file="deploy/home-server/.env.server.example"
 image_repository="${BACKEND_IMAGE_REPOSITORY:-ghcr.io/sebastianaben/intervue-api}"
+nonverbal_image_repository="${NONVERBAL_INFERENCE_IMAGE_REPOSITORY:-ghcr.io/sebastianaben/intervue-nonverbal-inference}"
 
 case "$branch" in
   dev)
     deploy_dir="/home/froztbitez/web-server/intervue/dev"
     compose_project="intervue-dev"
     backend_image="${image_repository}:dev"
+    nonverbal_image="${nonverbal_image_repository}:dev"
     backend_port="4201"
     health_url="http://127.0.0.1:4201/api/health"
     ;;
@@ -19,6 +21,7 @@ case "$branch" in
     deploy_dir="/home/froztbitez/web-server/intervue/main"
     compose_project="intervue-main"
     backend_image="${image_repository}:main"
+    nonverbal_image="${nonverbal_image_repository}:main"
     backend_port="4200"
     health_url="http://127.0.0.1:4200/api/health"
     ;;
@@ -42,6 +45,7 @@ if [[ ! -f .env.server ]]; then
     cp "$env_example_file" .env.server
     sed -i "s/^COMPOSE_PROJECT_NAME=.*/COMPOSE_PROJECT_NAME=${compose_project}/" .env.server
     sed -i "s|^BACKEND_IMAGE=.*|BACKEND_IMAGE=${backend_image}|" .env.server
+    sed -i "s|^NONVERBAL_INFERENCE_IMAGE=.*|NONVERBAL_INFERENCE_IMAGE=${nonverbal_image}|" .env.server
     sed -i "s/^BACKEND_HOST_PORT=.*/BACKEND_HOST_PORT=${backend_port}/" .env.server
   fi
 
@@ -50,6 +54,7 @@ Missing $deploy_dir/.env.server.
 Create it from deploy/home-server/.env.server.example and set environment-specific secrets.
 Expected project: $compose_project
 Expected backend image: $backend_image
+Expected nonverbal inference image: $nonverbal_image
 Expected health URL: $health_url
 EOF
   exit 1
@@ -75,6 +80,21 @@ EOF
   exit 1
 fi
 
+configured_nonverbal_image="$(grep -E '^NONVERBAL_INFERENCE_IMAGE=' .env.server | tail -1 | cut -d '=' -f 2- || true)"
+if [[ -z "$configured_nonverbal_image" ]]; then
+  echo "NONVERBAL_INFERENCE_IMAGE=${nonverbal_image}" >> .env.server
+  configured_nonverbal_image="$nonverbal_image"
+fi
+
+if [[ "$configured_nonverbal_image" != "$nonverbal_image" ]]; then
+  cat >&2 <<EOF
+Unexpected NONVERBAL_INFERENCE_IMAGE in $deploy_dir/.env.server.
+Expected: $nonverbal_image
+Actual:   ${configured_nonverbal_image:-<empty>}
+EOF
+  exit 1
+fi
+
 compose=(docker compose --env-file .env.server -p "$compose_project" -f "$compose_file")
 
 log_step() {
@@ -94,6 +114,10 @@ show_compose_diagnostics() {
   echo
   echo "==> Backend logs"
   "${compose[@]}" logs --tail=100 backend || true
+
+  echo
+  echo "==> Nonverbal inference logs"
+  "${compose[@]}" logs --tail=100 nonverbal-inference || true
 }
 
 verify_postgres_auth() {
@@ -137,11 +161,33 @@ run_migration() {
   fi
 }
 
-log_step "Pull backend and migrate image"
-"${compose[@]}" pull backend migrate
+wait_for_nonverbal_inference() {
+  for attempt in {1..30}; do
+    if "${compose[@]}" exec -T nonverbal-inference python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=2).read()" >/dev/null 2>&1; then
+      echo "Nonverbal inference health check passed."
+      return 0
+    fi
+
+    echo "Waiting for nonverbal inference health check ($attempt/30)"
+    sleep 2
+  done
+
+  echo "Nonverbal inference health check failed." >&2
+  show_compose_diagnostics
+  exit 1
+}
+
+log_step "Pull backend, migrate, and nonverbal inference images"
+"${compose[@]}" pull backend migrate nonverbal-inference
 
 log_step "Start PostgreSQL"
 "${compose[@]}" up -d postgres
+
+log_step "Start nonverbal inference"
+"${compose[@]}" up -d nonverbal-inference
+
+log_step "Check nonverbal inference health"
+wait_for_nonverbal_inference
 
 log_step "Verify PostgreSQL credentials"
 verify_postgres_auth

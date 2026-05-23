@@ -4,9 +4,9 @@ Backend deployment follows the same pattern as Omnia:
 
 ```text
 GitHub-hosted runner
--> validate, build backend Docker image, push to GHCR
+-> validate, build backend and nonverbal inference Docker images, push to GHCR
 -> self-hosted runner on home server
--> pull GHCR image, run Prisma migrations, restart Docker Compose
+-> pull GHCR images, start nonverbal inference, run Prisma migrations, restart Docker Compose
 ```
 
 Public ingress still follows the home-server topology:
@@ -17,10 +17,10 @@ Cloudflare -> Cloudflare Tunnel -> Nginx Proxy Manager -> backend host port
 
 Recommended environments:
 
-| Branch | Server path | Compose project | Backend image | Host port | API hostname |
-| --- | --- | --- | --- | --- | --- |
-| `dev` | `/home/froztbitez/web-server/intervue/dev` | `intervue-dev` | `ghcr.io/sebastianaben/intervue-api:dev` | `4201` | `api-dev-intervue.albern.space` |
-| `main` | `/home/froztbitez/web-server/intervue/main` | `intervue-main` | `ghcr.io/sebastianaben/intervue-api:main` | `4200` | `api-intervue.albern.space` |
+| Branch | Server path | Compose project | Backend image | ML image | Host port | API hostname |
+| --- | --- | --- | --- | --- | --- | --- |
+| `dev` | `/home/froztbitez/web-server/intervue/dev` | `intervue-dev` | `ghcr.io/sebastianaben/intervue-api:dev` | `ghcr.io/sebastianaben/intervue-nonverbal-inference:dev` | `4201` | `api-dev-intervue.albern.space` |
+| `main` | `/home/froztbitez/web-server/intervue/main` | `intervue-main` | `ghcr.io/sebastianaben/intervue-api:main` | `ghcr.io/sebastianaben/intervue-nonverbal-inference:main` | `4200` | `api-intervue.albern.space` |
 
 ## First Server Setup
 
@@ -72,6 +72,7 @@ For dev, use:
 ```text
 COMPOSE_PROJECT_NAME=intervue-dev
 BACKEND_IMAGE=ghcr.io/sebastianaben/intervue-api:dev
+NONVERBAL_INFERENCE_IMAGE=ghcr.io/sebastianaben/intervue-nonverbal-inference:dev
 BACKEND_HOST_PORT=4201
 ```
 
@@ -80,6 +81,7 @@ For main, use:
 ```text
 COMPOSE_PROJECT_NAME=intervue-main
 BACKEND_IMAGE=ghcr.io/sebastianaben/intervue-api:main
+NONVERBAL_INFERENCE_IMAGE=ghcr.io/sebastianaben/intervue-nonverbal-inference:main
 BACKEND_HOST_PORT=4200
 ```
 
@@ -132,6 +134,13 @@ Health checks from the home server:
 ```bash
 curl -i http://127.0.0.1:4201/api/health
 curl -i http://127.0.0.1:4200/api/health
+```
+
+The nonverbal inference service is private inside Docker Compose. Check it from the service container:
+
+```bash
+cd /home/froztbitez/web-server/intervue/dev
+docker compose --env-file .env.server -p intervue-dev -f deploy/home-server/docker-compose.server.yml exec -T nonverbal-inference python -c "import urllib.request; print(urllib.request.urlopen('http://127.0.0.1:8765/health').read().decode())"
 ```
 
 Check NPM can reach the backend through Docker host gateway:

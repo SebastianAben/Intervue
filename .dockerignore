@@ -11,4 +11,3 @@ coverage
 .env.*
 cache
 ml/nonverbal/data/raw
-ml/nonverbal/models

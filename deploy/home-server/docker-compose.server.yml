@@ -23,6 +23,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      nonverbal-inference:
+        condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 4000
@@ -31,7 +33,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
-      NONVERBAL_INFERENCE_URL: ${NONVERBAL_INFERENCE_URL:-http://172.17.0.1:8765/predict}
+      NONVERBAL_INFERENCE_URL: http://nonverbal-inference:8765/predict
     ports:
       - "${BACKEND_HOST_BIND:-0.0.0.0}:${BACKEND_HOST_PORT:-4200}:4000"
     healthcheck:
@@ -58,10 +60,30 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
-      NONVERBAL_INFERENCE_URL: ${NONVERBAL_INFERENCE_URL:-http://172.17.0.1:8765/predict}
+      NONVERBAL_INFERENCE_URL: http://nonverbal-inference:8765/predict
     command: pnpm --filter @intervue/api exec prisma migrate deploy
     profiles:
       - tools
+
+  nonverbal-inference:
+    image: ${NONVERBAL_INFERENCE_IMAGE:?NONVERBAL_INFERENCE_IMAGE is required}
+    restart: unless-stopped
+    environment:
+      NONVERBAL_INFERENCE_HOST: 0.0.0.0
+      NONVERBAL_INFERENCE_PORT: 8765
+      NONVERBAL_INFERENCE_LOGS: ${NONVERBAL_INFERENCE_LOGS:-0}
+    expose:
+      - "8765"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health', timeout=2).read()\"",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
 
 volumes:
   postgres_data:
