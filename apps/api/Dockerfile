@@ -2,6 +2,7 @@ FROM node:24-alpine AS base
 
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
+ENV DATABASE_URL="postgresql://intervue:intervue@localhost:5432/intervue"
 
 RUN corepack enable
 
