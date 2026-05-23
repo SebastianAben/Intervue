@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { Prisma } from '@prisma/client';
 import { getRequestUser } from '../auth/session.js';
 import { prisma } from '../db/prisma.js';
 import { fail, ok } from '../utils/api-response.js';
@@ -14,13 +15,30 @@ historyRouter.get('/', async (request, response, next) => {
       return;
     }
 
-    const sessions = await prisma.interviewSession.findMany({
-      where: {
-        userId: user.id,
-        status: {
-          in: ['completed', 'abandoned', 'failed'],
-        },
+    const targetApplicationId =
+      typeof request.query.targetApplicationId === 'string'
+        ? request.query.targetApplicationId.trim()
+        : null;
+    const where: Prisma.InterviewSessionWhereInput = {
+      userId: user.id,
+      status: {
+        in: ['completed', 'abandoned', 'failed'],
       },
+      targetApplication: {
+        userId: user.id,
+      },
+    };
+
+    if (targetApplicationId) {
+      where.targetApplicationId = targetApplicationId;
+    } else if (request.query.targetApplicationId !== undefined) {
+      where.id = {
+        in: [],
+      };
+    }
+
+    const sessions = await prisma.interviewSession.findMany({
+      where,
       orderBy: [
         {
           endedAt: 'desc',

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 
@@ -10,12 +11,9 @@ export type AuthLayoutProps = {
 export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
   return (
     <main className="grid min-h-[100dvh] bg-[var(--background)] lg:grid-cols-[minmax(0,0.92fr)_minmax(520px,1fr)]">
-      <section className="relative hidden overflow-hidden bg-[var(--primary)] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+      <section className="relative hidden overflow-hidden bg-[var(--primary)] p-10 text-white lg:flex lg:flex-col lg:justify-center">
         <div className="absolute inset-0 bg-[url('https://picsum.photos/seed/intervue-auth/1400/1200')] bg-cover bg-center opacity-20 grayscale contrast-125" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_18%,rgb(201_214_107_/_0.35),transparent_28rem),linear-gradient(135deg,rgb(18_60_55_/_0.82),rgb(18_60_55_/_0.96))]" />
-        <a className="relative text-2xl font-black tracking-[-0.03em]" href="/">
-          Intervue
-        </a>
         <div className="relative max-w-xl">
           <p className="text-sm font-semibold text-[var(--primary-muted)]">
             Latihan interview berbasis suara
@@ -28,7 +26,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             dipakai.
           </p>
         </div>
-        <div className="relative grid grid-cols-3 gap-3">
+        <div className="relative mt-28 grid grid-cols-3 gap-3">
           {['Target', 'Voice', 'Report'].map((item) => (
             <div
               className="rounded-[var(--radius-md)] border border-white/10 bg-white/8 p-4 text-sm font-semibold text-white/78 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.12)]"
@@ -42,10 +40,17 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
       <section className="flex min-h-[100dvh] items-center justify-center bg-[var(--background)] px-5 py-10">
         <div className="w-full max-w-[440px]">
           <a
-            className="mb-10 inline-block text-xl font-black tracking-[-0.03em] text-[var(--primary)] lg:hidden"
+            className="mb-10 inline-flex items-center lg:hidden"
             href="/"
           >
-            Intervue
+            <Image
+              alt="Intervue"
+              className="h-16 w-auto object-contain"
+              height={132}
+              priority
+              src="/brand/logo-tulisan-display.png"
+              width={250}
+            />
           </a>
           <Card className="border-transparent bg-transparent p-0 shadow-none">
             <h1 className="font-[var(--font-jakarta)] text-4xl font-black leading-none tracking-[-0.035em] text-[var(--foreground)]">

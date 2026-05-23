@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import type { ReactNode } from 'react';
 import type { AuthUser } from '@intervue/shared';
 import { LogoutButton } from '@/components/auth/logout-button';
@@ -56,10 +57,17 @@ export function AppShell({
       <aside className="hidden min-h-[100dvh] flex-col border-r border-white/80 bg-white/72 p-4 shadow-[0_20px_70px_rgb(18_60_55_/_0.08)] backdrop-blur lg:flex lg:h-[100dvh] lg:min-h-0">
         <div className="w-full pb-6 pt-[7px]">
           <Link
-            className="block rounded-[var(--radius-sm)] px-4 py-2 font-[var(--font-jakarta)] text-2xl font-black leading-[33.6px] tracking-[-0.03em] text-[var(--primary)] transition-colors hover:bg-[rgb(18_60_55_/_0.06)]"
+            className="flex w-fit items-center rounded-[var(--radius-sm)] px-4 py-3 transition-colors hover:bg-[rgb(18_60_55_/_0.06)]"
             href="/"
           >
-            Intervue
+            <Image
+              alt="Intervue"
+              className="h-16 w-auto object-contain"
+              height={132}
+              priority
+              src="/brand/logo-tulisan-display.png"
+              width={250}
+            />
           </Link>
         </div>
 
@@ -127,8 +135,15 @@ export function AppShell({
       <div className="min-w-0 pb-20 lg:h-screen lg:overflow-y-auto lg:pb-0">
         <header className="sticky top-0 z-20 border-b border-white/80 bg-[rgb(245_247_244_/_0.9)] px-5 py-4 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
-            <Link className="text-xl font-black tracking-[-0.03em] text-[var(--primary)]" href="/">
-              Intervue
+            <Link className="flex items-center" href="/">
+              <Image
+                alt="Intervue"
+                className="h-14 w-auto object-contain"
+                height={132}
+                priority
+                src="/brand/logo-tulisan-display.png"
+                width={250}
+              />
             </Link>
             <Button href="/interview" size="sm">
               Latihan

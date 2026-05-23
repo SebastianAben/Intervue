@@ -16,7 +16,7 @@ import { RecordingButton } from '@/components/voice/recording-button';
 import { ScoreMeter } from '@/components/voice/score-meter';
 import { StatusChip, type VoiceStatus } from '@/components/voice/status-chip';
 import { WaveformIndicator } from '@/components/voice/waveform-indicator';
-import { submitTurnAnswer } from '@/lib/api-client';
+import { humanizeApiError, submitTurnAnswer } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import { FullSimulationRoom } from './full-simulation-room';
 import { loadNonverbalLandmarkers, NonverbalFeatureCapture } from './nonverbal-feature-capture';
@@ -472,7 +472,7 @@ function PracticeInterviewRoom({ initialSession }: { initialSession: InterviewSe
       });
 
       if (response.error) {
-        setError(response.error.message);
+        setError(humanizeApiError(response.error));
         setRoomState('error');
         return;
       }

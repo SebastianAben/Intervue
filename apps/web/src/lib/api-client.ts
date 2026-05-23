@@ -1,8 +1,10 @@
 import type {
+  ApiErrorCode,
   ApiResponse,
   AuthResponse,
   CreateSessionResponse,
   CreateSessionPayload,
+  HistoryListResponse,
   ParseCvResponse,
   ReportDetailResponse,
   SessionDetailResponse,
@@ -21,6 +23,11 @@ type RequestOptions = {
   method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
   body?: unknown;
   cookie?: string;
+};
+
+type ApiErrorPayload = {
+  code: ApiErrorCode;
+  message: string;
 };
 
 export async function apiRequest<T>(
@@ -150,6 +157,26 @@ export async function getReport(sessionId: string, { cookie }: { cookie?: string
   });
 }
 
+export async function listHistory({
+  cookie,
+  targetApplicationId,
+}: {
+  cookie?: string;
+  targetApplicationId?: string;
+} = {}) {
+  const params = new URLSearchParams();
+
+  if (targetApplicationId) {
+    params.set('targetApplicationId', targetApplicationId);
+  }
+
+  const queryString = params.toString();
+
+  return apiRequest<NonNullable<HistoryListResponse['data']>>(`/history${queryString ? `?${queryString}` : ''}`, {
+    cookie,
+  });
+}
+
 export async function startSession(sessionId: string, { cookie }: { cookie?: string } = {}) {
   return apiRequest<NonNullable<SessionDetailResponse['data']>>(`/sessions/${sessionId}/start`, {
     method: 'POST',
@@ -169,4 +196,28 @@ export async function submitTurnAnswer(
       body: payload,
     },
   );
+}
+
+export function humanizeApiError(error: ApiErrorPayload | null | undefined) {
+  if (!error) {
+    return 'Terjadi kendala jaringan. Coba ulangi setelah koneksi stabil.';
+  }
+
+  const messages: Partial<Record<ApiErrorCode, string>> = {
+    AI_EVALUATION_FAILED:
+      'Gemini belum bisa memproses jawaban saat ini. Transcript tetap aman di halaman ini; coba submit ulang beberapa saat lagi.',
+    BACKEND_UNAVAILABLE:
+      'Backend belum tersedia. Pastikan API home server berjalan lalu coba ulangi.',
+    GEMINI_RATE_LIMITED:
+      'Kuota Gemini free tier sedang penuh. Tunggu beberapa saat, lalu coba lagi tanpa membuat sesi baru.',
+    REPORT_GENERATION_FAILED:
+      'Report belum bisa dibuat dari data sesi ini. Coba buka ulang report setelah beberapa saat.',
+    SESSION_NOT_FOUND:
+      'Sesi interview tidak ditemukan atau tidak lagi tersedia untuk akun ini.',
+    UNAUTHORIZED: 'Session login berakhir. Login ulang untuk melanjutkan.',
+    VALIDATION_ERROR:
+      'Input belum valid. Periksa transcript, durasi, dan status sesi sebelum mencoba lagi.',
+  };
+
+  return messages[error.code] ?? error.message;
 }

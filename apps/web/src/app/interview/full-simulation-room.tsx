@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScoreMeter } from '@/components/voice/score-meter';
-import { submitTurnAnswer } from '@/lib/api-client';
+import { humanizeApiError, submitTurnAnswer } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 import {
   loadNonverbalLandmarkers,
@@ -461,7 +461,7 @@ export function FullSimulationRoom({ initialSession }: { initialSession: Intervi
       });
 
       if (response.error) {
-        setError(response.error.message);
+        setError(humanizeApiError(response.error));
         setStage('error');
         return;
       }

@@ -7,9 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { requireAuth } from '@/lib/auth-server';
 import { cn } from '@/lib/cn';
-import { createSession, getSession, listTargets, startSession } from '@/lib/api-client';
+import {
+  createSession,
+  getSession,
+  humanizeApiError,
+  listTargets,
+  startSession,
+} from '@/lib/api-client';
 import { InterviewRoom } from './interview-room';
 import { SpeechCapabilityCheck } from './speech-capability-check';
+import { SubmitSessionButton } from './submit-session-button';
 
 const modeOptions: Array<{
   value: SessionMode;
@@ -29,6 +36,22 @@ const modeOptions: Array<{
 ];
 
 const questionCountOptions = [3, 5, 7];
+
+function sessionErrorTitle(code?: string) {
+  if (code === 'GEMINI_RATE_LIMITED') {
+    return 'Gemini sedang penuh';
+  }
+
+  if (code === 'AI_EVALUATION_FAILED') {
+    return 'Pertanyaan pertama belum bisa dibuat';
+  }
+
+  if (code === 'SESSION_NOT_FOUND') {
+    return 'Session tidak ditemukan';
+  }
+
+  return 'Session tidak bisa dibuka';
+}
 
 async function createSessionAction(formData: FormData) {
   'use server';
@@ -123,13 +146,16 @@ export default async function InterviewPage({
           <Card className="border-[#f4b8b8] bg-[#fff5f5] p-6">
             <Badge tone="warning">Session error</Badge>
             <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--danger)]">
-              Session tidak bisa dibuka
+              {sessionErrorTitle(startedResponse.error.code)}
             </h2>
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-              {startedResponse.error.message}
+              {humanizeApiError(startedResponse.error)}
             </p>
-            <div className="mt-6">
-              <Button href="/interview" variant="outline">
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button href={`/interview?sessionId=${params.sessionId}`} variant="outline">
+                Coba lagi
+              </Button>
+              <Button href="/interview" variant="ghost">
                 Kembali ke Setup
               </Button>
             </div>
@@ -260,9 +286,7 @@ export default async function InterviewPage({
             <Button href="/dashboard" type="button" variant="ghost">
               Kembali
             </Button>
-            <Button disabled={targets.length === 0} type="submit">
-              Buat Session Interview
-            </Button>
+            <SubmitSessionButton disabled={targets.length === 0} />
           </div>
         </form>
 

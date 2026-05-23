@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+.pnpm-store
+.next
+dist
+build
+coverage
+*.tsbuildinfo
+.env
+.env.*
+cache
+ml/nonverbal/data/raw
+ml/nonverbal/models
