@@ -30,27 +30,29 @@ function getJwtSecret() {
   return env.JWT_SECRET;
 }
 
+function getCookieOptions() {
+  return {
+    domain: env.SESSION_COOKIE_DOMAIN,
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: env.NODE_ENV === 'production',
+    path: '/',
+  };
+}
+
 export function setSessionCookie(response: Response, userId: string) {
   const token = jwt.sign({ sub: userId } satisfies SessionPayload, getJwtSecret(), {
     expiresIn: sessionMaxAgeSeconds,
   });
 
   response.cookie(authCookieName, token, {
-    httpOnly: true,
+    ...getCookieOptions(),
     maxAge: sessionMaxAgeSeconds * 1000,
-    sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
-    path: '/',
   });
 }
 
 export function clearSessionCookie(response: Response) {
-  response.clearCookie(authCookieName, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: env.NODE_ENV === 'production',
-    path: '/',
-  });
+  response.clearCookie(authCookieName, getCookieOptions());
 }
 
 function readCookie(request: Request, name: string) {

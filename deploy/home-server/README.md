@@ -97,17 +97,31 @@ Frontend deployment uses Vercel Git Integration, not GitHub Actions. Connect the
 Root Directory: apps/web
 ```
 
-Set Vercel environment variables:
+The frontend can use Vercel's default `*.vercel.app` domains. Browser requests go to the same-origin rewrite `/api/backend/*`, and Vercel forwards them to the home-server API.
+
+Set Vercel environment variables for production:
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=https://api-intervue.albern.space/api
+NEXT_PUBLIC_API_BASE_URL=/api/backend
+API_INTERNAL_BASE_URL=https://api-intervue.albern.space/api
 ```
 
 For preview/dev deployments, use:
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=https://api-dev-intervue.albern.space/api
+NEXT_PUBLIC_API_BASE_URL=/api/backend
+API_INTERNAL_BASE_URL=https://api-dev-intervue.albern.space/api
 ```
+
+Set backend `.env.server` to the matching frontend origin:
+
+```text
+dev:  CORS_ORIGIN=<your-dev-vercel-origin>
+main: CORS_ORIGIN=<your-production-vercel-origin>
+SESSION_COOKIE_DOMAIN=
+```
+
+Only set `SESSION_COOKIE_DOMAIN=.albern.space` if the frontend also uses an `albern.space` custom domain.
 
 ## Cloudflare Tunnel and NPM
 

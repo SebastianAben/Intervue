@@ -33,6 +33,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
       NONVERBAL_INFERENCE_URL: http://nonverbal-inference:8765/predict
     ports:
       - "${BACKEND_HOST_BIND:-0.0.0.0}:${BACKEND_HOST_PORT:-4200}:4000"
@@ -60,6 +61,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3-flash-preview}
       CORS_ORIGIN: ${CORS_ORIGIN:?CORS_ORIGIN is required}
+      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
       NONVERBAL_INFERENCE_URL: http://nonverbal-inference:8765/predict
     command: pnpm --filter @intervue/api exec prisma migrate deploy
     profiles:

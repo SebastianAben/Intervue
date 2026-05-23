@@ -16,7 +16,11 @@ import type {
   TargetStatus,
 } from '@intervue/shared';
 
-export const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api';
+const browserApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/backend';
+const serverApiBaseUrl =
+  process.env.API_INTERNAL_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api';
+
+export const apiBaseUrl = typeof window === 'undefined' ? serverApiBaseUrl : browserApiBaseUrl;
 type AuthPayload = NonNullable<AuthResponse['data']>;
 
 type RequestOptions = {
