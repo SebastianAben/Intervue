@@ -23,4 +23,4 @@ RUN pnpm --filter @intervue/api build
 
 EXPOSE 4000
 
-CMD ["pnpm", "--filter", "@intervue/api", "exec", "tsx", "src/server.ts"]
+CMD ["pnpm", "--filter", "@intervue/api", "start"]
