@@ -1,11 +1,18 @@
-import type { HistorySessionSummary, SessionMode, SessionStatus } from '@intervue/shared';
-import { cookies } from 'next/headers';
+'use client';
+
+import type {
+  HistorySessionSummary,
+  SessionMode,
+  SessionStatus,
+  TargetApplication,
+} from '@intervue/shared';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
-import { requireAuth } from '@/lib/auth-server';
 import { listHistory, listTargets } from '@/lib/api-client';
 import { cn } from '@/lib/cn';
 
@@ -61,89 +68,6 @@ function scoreLabel(value: number | null) {
 
 function targetSubtitle(session: HistorySessionSummary) {
   return [session.targetCompany, session.targetIndustry].filter(Boolean).join(' - ');
-}
-
-function HistoryEmptyState({
-  filtered,
-  selectedTargetLabel,
-}: {
-  filtered: boolean;
-  selectedTargetLabel?: string;
-}) {
-  return (
-    <Card className="overflow-hidden p-0">
-      <div className="grid gap-0 lg:grid-cols-[minmax(0,0.88fr)_320px]">
-        <div className="p-7 sm:p-8">
-          <Badge tone={filtered ? 'warning' : 'primary'}>
-            {filtered ? 'Filter kosong' : 'History kosong'}
-          </Badge>
-          <h2 className="mt-5 max-w-2xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.03em] text-[var(--foreground)]">
-            {filtered ? 'Belum ada sesi untuk target ini.' : 'Mulai satu sesi untuk membangun pola latihan.'}
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-            {filtered
-              ? `${selectedTargetLabel ?? 'Target terpilih'} belum punya sesi completed, abandoned, atau failed. Pilih target lain atau mulai interview baru.`
-              : 'History akan menampilkan target, mode, status, skor, jumlah pertanyaan, tanggal sesi, dan akses report setelah interview selesai atau dihentikan.'}
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button href="/interview">Mulai interview</Button>
-            {filtered ? (
-              <Button href="/history" variant="outline">
-                Reset filter
-              </Button>
-            ) : (
-              <Button href="/targets" variant="outline">
-                Kelola target
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="border-t border-[var(--border)] bg-[var(--surface-muted)] p-6 lg:border-l lg:border-t-0">
-          <div className="space-y-3">
-            {['Target dan role', 'Skor jawaban', 'Report detail'].map((item, index) => (
-              <div
-                className="rounded-[var(--radius-md)] border border-white/80 bg-white/72 p-4 shadow-[0_1px_2px_rgb(23_27_26_/_0.04)]"
-                key={item}
-              >
-                <p className="font-[var(--font-geist-mono)] text-xs font-semibold text-[var(--muted)]">
-                  0{index + 1}
-                </p>
-                <p className="mt-2 text-sm font-black text-[var(--foreground)]">{item}</p>
-                <div className="mt-3 h-2 rounded-full bg-[rgb(18_60_55_/_0.08)]">
-                  <div
-                    className="h-2 rounded-full bg-[var(--primary-muted)]"
-                    style={{ width: `${42 + index * 18}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-function HistoryErrorCard({ message }: { message: string }) {
-  return (
-    <Card className="border-[#f4b8b8] bg-[#fff5f5] p-6">
-      <Badge tone="danger">History error</Badge>
-      <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-black text-[var(--danger)]">
-        History belum bisa dimuat
-      </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-        {message || 'Backend belum mengembalikan daftar sesi. Coba ulangi setelah koneksi API siap.'}
-      </p>
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Button href="/history" variant="outline">
-          Coba lagi
-        </Button>
-        <Button href="/interview" variant="ghost">
-          Ke interview
-        </Button>
-      </div>
-    </Card>
-  );
 }
 
 function HistorySessionCard({ session }: { session: HistorySessionSummary }) {
@@ -247,43 +171,74 @@ function HistorySessionCard({ session }: { session: HistorySessionSummary }) {
   );
 }
 
-export default async function HistoryPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ targetApplicationId?: string }>;
-}) {
-  const user = await requireAuth();
-  const params = searchParams ? await searchParams : {};
-  const selectedTargetId = params.targetApplicationId ?? 'all';
-  const cookieHeader = (await cookies()).toString();
+function HistoryPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const selectedTargetId = searchParams.get('targetApplicationId') ?? 'all';
   const targetFilter = selectedTargetId === 'all' ? undefined : selectedTargetId;
-  const [targetResponse, historyResponse] = await Promise.all([
-    listTargets({ status: 'active', cookie: cookieHeader }),
-    listHistory({ cookie: cookieHeader, targetApplicationId: targetFilter }),
-  ]);
-  const activeTargets = targetResponse.data?.targets ?? [];
-  const sessions = historyResponse.data?.sessions ?? [];
-  const selectedTarget = activeTargets.find((target) => target.id === selectedTargetId);
+  const [targets, setTargets] = useState<TargetApplication[]>([]);
+  const [sessions, setSessions] = useState<HistorySessionSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadHistory = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const [targetResponse, historyResponse] = await Promise.all([
+        listTargets({ status: 'active' }),
+        listHistory({ targetApplicationId: targetFilter }),
+      ]);
+
+      setTargets(targetResponse.data?.targets ?? []);
+      setSessions(historyResponse.data?.sessions ?? []);
+
+      if (historyResponse.error) {
+        setError(historyResponse.error.message);
+      }
+    } catch {
+      setError('History belum bisa dimuat.');
+      setTargets([]);
+      setSessions([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [targetFilter]);
+
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  const selectedTarget = targets.find((target) => target.id === selectedTargetId);
   const completedCount = sessions.filter((session) => session.status === 'completed').length;
   const reportCount = sessions.filter((session) => session.hasReport).length;
-  const averageScore = Math.round(
-    sessions.reduce((sum, session) => sum + (session.overallScore ?? 0), 0) /
-      Math.max(1, sessions.filter((session) => session.overallScore !== null).length),
+  const averageScore = useMemo(
+    () =>
+      Math.round(
+        sessions.reduce((sum, session) => sum + (session.overallScore ?? 0), 0) /
+          Math.max(1, sessions.filter((session) => session.overallScore !== null).length),
+      ),
+    [sessions],
   );
+
+  function handleFilterChange(formData: FormData) {
+    const nextTargetId = String(formData.get('targetApplicationId') ?? 'all');
+    router.push(nextTargetId === 'all' ? '/history' : `/history?targetApplicationId=${nextTargetId}`);
+  }
 
   return (
     <AppShell
       activeHref="/history"
       description="Daftar sesi interview yang sudah selesai, gagal, atau dihentikan."
       title="History"
-      user={user}
     >
       <div className="space-y-5">
         <Card className="relative overflow-hidden p-6 sm:p-7">
           <div className="absolute right-0 top-0 h-44 w-44 translate-x-16 -translate-y-20 rounded-full bg-[var(--accent)]/25 blur-3xl" />
           <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
             <div>
-              <Badge tone="primary">{sessions.length} sesi tersimpan</Badge>
+              <Badge tone="primary">{isLoading ? 'Memuat sesi' : `${sessions.length} sesi tersimpan`}</Badge>
               <h2 className="mt-5 max-w-3xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.035em] text-[var(--foreground)] sm:text-4xl">
                 Riwayat latihan untuk membaca progres per target.
               </h2>
@@ -293,19 +248,18 @@ export default async function HistoryPage({
               </p>
             </div>
 
-            <form className="rounded-[var(--radius-lg)] border border-white/80 bg-white/72 p-4 shadow-[0_12px_42px_rgb(18_60_55_/_0.08)] backdrop-blur">
+            <form
+              action={handleFilterChange}
+              className="rounded-[var(--radius-lg)] border border-white/80 bg-white/72 p-4 shadow-[0_12px_42px_rgb(18_60_55_/_0.08)] backdrop-blur"
+            >
               <Select
                 defaultValue={selectedTargetId}
-                helperText={
-                  targetResponse.error
-                    ? 'Target aktif belum bisa dimuat, tetapi history tetap ditampilkan.'
-                    : 'Filter hanya memakai target lamaran aktif.'
-                }
+                helperText="Filter hanya memakai target lamaran aktif."
                 label="Filter target"
                 name="targetApplicationId"
                 options={[
                   { label: 'Semua target', value: 'all' },
-                  ...activeTargets.map((target) => ({
+                  ...targets.map((target) => ({
                     label: [target.role, target.company].filter(Boolean).join(' - '),
                     value: target.id,
                   })),
@@ -325,11 +279,30 @@ export default async function HistoryPage({
           </div>
         </Card>
 
+        {error ? (
+          <Card className="border-[#f4b8b8] bg-[#fff5f5] p-6">
+            <Badge tone="danger">History error</Badge>
+            <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-black text-[var(--danger)]">
+              History belum bisa dimuat
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">{error}</p>
+            <div className="mt-6">
+              <Button onClick={() => void loadHistory()} type="button" variant="outline">
+                Coba lagi
+              </Button>
+            </div>
+          </Card>
+        ) : null}
+
         <div className="overflow-hidden rounded-[var(--radius-lg)] border border-white/80 bg-white/72 shadow-[var(--shadow-card)] backdrop-blur">
           {[
-            ['Completed', String(completedCount), 'Sesi selesai dengan jawaban tersimpan.'],
-            ['Report', String(reportCount), 'Report deterministik siap dibuka.'],
-            ['Avg score', sessions.some((session) => session.overallScore !== null) ? `${averageScore}/100` : 'N/A', 'Rata-rata dari sesi yang punya skor.'],
+            ['Completed', isLoading ? '...' : String(completedCount), 'Sesi selesai dengan jawaban tersimpan.'],
+            ['Report', isLoading ? '...' : String(reportCount), 'Report deterministik siap dibuka.'],
+            [
+              'Avg score',
+              sessions.some((session) => session.overallScore !== null) ? `${averageScore}/100` : 'N/A',
+              'Rata-rata dari sesi yang punya skor.',
+            ],
           ].map(([label, value, description]) => (
             <div
               className="grid gap-3 border-b border-[var(--border)] p-5 last:border-b-0 sm:grid-cols-[170px_130px_1fr] sm:items-center"
@@ -344,25 +317,70 @@ export default async function HistoryPage({
           ))}
         </div>
 
-        {historyResponse.error ? (
-          <HistoryErrorCard message={historyResponse.error.message} />
-        ) : sessions.length > 0 ? (
+        {isLoading ? (
           <div className="space-y-4">
+            {[0, 1, 2].map((item) => (
+              <Card className="h-56 animate-pulse bg-white/60 p-5" key={item}>
+                <span className="sr-only">Memuat history</span>
+              </Card>
+            ))}
+          </div>
+        ) : sessions.length > 0 ? (
+          <section className="space-y-4">
             {sessions.map((session) => (
               <HistorySessionCard key={session.id} session={session} />
             ))}
-          </div>
+          </section>
         ) : (
-          <HistoryEmptyState
-            filtered={selectedTargetId !== 'all'}
-            selectedTargetLabel={
-              selectedTarget
-                ? [selectedTarget.role, selectedTarget.company].filter(Boolean).join(' - ')
-                : undefined
-            }
-          />
+          <Card className="p-7 sm:p-8">
+            <Badge tone={selectedTargetId !== 'all' ? 'warning' : 'primary'}>
+              {selectedTargetId !== 'all' ? 'Filter kosong' : 'History kosong'}
+            </Badge>
+            <h2 className="mt-5 max-w-2xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.03em] text-[var(--foreground)]">
+              {selectedTargetId !== 'all'
+                ? 'Belum ada sesi untuk target ini.'
+                : 'Mulai satu sesi untuk membangun pola latihan.'}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+              {selectedTargetId !== 'all'
+                ? `${selectedTarget?.role ?? 'Target terpilih'} belum punya sesi completed, abandoned, atau failed.`
+                : 'History akan menampilkan target, mode, status, skor, jumlah pertanyaan, tanggal sesi, dan akses report.'}
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button href="/interview">Mulai interview</Button>
+              {selectedTargetId !== 'all' ? (
+                <Button href="/history" variant="outline">
+                  Reset filter
+                </Button>
+              ) : (
+                <Button href="/targets" variant="outline">
+                  Kelola target
+                </Button>
+              )}
+            </div>
+          </Card>
         )}
       </div>
     </AppShell>
+  );
+}
+
+export default function HistoryPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell
+          activeHref="/history"
+          description="Riwayat sesi, skor, dan report yang sudah selesai."
+          title="History"
+        >
+          <Card className="h-56 animate-pulse bg-white/60 p-5">
+            <span className="sr-only">Memuat history</span>
+          </Card>
+        </AppShell>
+      }
+    >
+      <HistoryPageContent />
+    </Suspense>
   );
 }

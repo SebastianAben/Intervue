@@ -1,3 +1,5 @@
+'use client';
+
 import type {
   InterviewType,
   JobLevel,
@@ -5,18 +7,22 @@ import type {
   TargetApplication,
   TargetApplicationPayload,
 } from '@intervue/shared';
-import { cookies } from 'next/headers';
-import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { cn } from '@/lib/cn';
-import { requireAuth } from '@/lib/auth-server';
 import { archiveTarget, createTarget, listTargets, updateTarget } from '@/lib/api-client';
+import { cn } from '@/lib/cn';
 import { CvSummaryField } from './cv-summary-field';
 
 const levelOptions = [
@@ -30,6 +36,9 @@ const languageOptions = [
   { label: 'Bahasa Indonesia', value: 'id' },
   { label: 'English', value: 'en' },
 ];
+
+const fieldClassName =
+  'h-[46px] w-full rounded-[var(--radius-sm)] border border-[var(--input-border)] bg-[var(--background)] px-[17px] text-base font-normal text-[var(--foreground)] transition-colors placeholder:text-[#6b7280] focus:border-[var(--primary-600)]';
 
 function optionalText(formData: FormData, key: string) {
   const value = String(formData.get(key) ?? '').trim();
@@ -50,63 +59,85 @@ function payloadFromFormData(formData: FormData): TargetApplicationPayload {
   };
 }
 
-async function createTargetAction(formData: FormData) {
-  'use server';
-
-  const cookieHeader = (await cookies()).toString();
-  await createTarget(payloadFromFormData(formData), { cookie: cookieHeader });
-  revalidatePath('/targets');
-  revalidatePath('/dashboard');
-  redirect('/targets');
+function Field({
+  children,
+  className,
+  helperText,
+  label,
+  optional = false,
+  required = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  helperText?: string;
+  label: string;
+  optional?: boolean;
+  required?: boolean;
+}) {
+  return (
+    <label className={cn('block', className)}>
+      <span className="block text-xs font-semibold uppercase leading-3 tracking-[0.05em] text-[#404848]">
+        {label} {required ? <span className="text-[var(--danger)]">*</span> : null}
+        {optional ? <span className="font-normal text-[var(--muted)]">(Opsional)</span> : null}
+      </span>
+      {helperText ? (
+        <span className="mt-1 block text-xs leading-4 text-[var(--muted)]">{helperText}</span>
+      ) : null}
+      <span className="mt-2 block">{children}</span>
+    </label>
+  );
 }
 
-async function updateTargetAction(formData: FormData) {
-  'use server';
-
-  const targetId = String(formData.get('targetId') ?? '');
-  if (!targetId) {
-    return;
-  }
-
-  const cookieHeader = (await cookies()).toString();
-  await updateTarget(targetId, payloadFromFormData(formData), { cookie: cookieHeader });
-  revalidatePath('/targets');
-  revalidatePath('/dashboard');
+function Separator() {
+  return <div className="h-px w-full bg-[#e5e5e5]" />;
 }
 
-async function archiveTargetAction(formData: FormData) {
-  'use server';
+function hasValue(value: string | null | undefined) {
+  return Boolean(value?.trim());
+}
 
-  const targetId = String(formData.get('targetId') ?? '');
-  if (!targetId) {
-    return;
-  }
+function targetCompleteness(target: TargetApplication) {
+  const fields = [
+    hasValue(target.role),
+    hasValue(target.company),
+    hasValue(target.industry),
+    hasValue(target.jobDescription),
+    hasValue(target.skillRequirements),
+    hasValue(target.candidateSummary),
+  ];
 
-  const cookieHeader = (await cookies()).toString();
-  await archiveTarget(targetId, { cookie: cookieHeader });
-  revalidatePath('/targets');
-  revalidatePath('/dashboard');
+  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
 }
 
 function TargetForm({
-  action,
-  submitLabel,
+  error,
+  isSubmitting,
   mode = 'create',
+  onSubmit,
+  submitLabel,
   target,
 }: {
-  action: (formData: FormData) => Promise<void>;
-  submitLabel: string;
+  error?: string | null;
+  isSubmitting: boolean;
   mode?: 'create' | 'edit';
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  submitLabel: string;
   target?: TargetApplication;
 }) {
   return (
     <form
-      action={action}
       className="overflow-hidden rounded-[12px] border border-[#e5e5e5] bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.05)]"
+      onSubmit={onSubmit}
     >
       {target ? <input name="targetId" type="hidden" value={target.id} /> : null}
       <div className="h-1 bg-[var(--primary)]" />
       <div className="flex flex-col gap-6 px-[25px] pb-[25px] pt-[45px]">
+        {error ? (
+          <p className="rounded-[var(--radius-sm)] bg-[#fde8e8] px-4 py-3 text-sm font-semibold text-[var(--danger)]">
+            {error}
+          </p>
+        ) : null}
+
         <div className="grid gap-4 md:grid-cols-2">
           <Field className="md:col-span-2" label="Nama Posisi" required>
             <input
@@ -155,7 +186,7 @@ function TargetForm({
                     type="radio"
                     value={option.value}
                   />
-                  <span className="block rounded-[6px] px-4 py-2 text-[var(--muted)] transition-colors peer-checked:bg-white peer-checked:text-[var(--primary)] peer-checked:shadow-[0_1px_1px_rgb(0_0_0_/_0.05)] peer-focus-visible:outline peer-focus-visible:outline-3 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[rgb(13_77_77_/_0.28)]">
+                  <span className="block rounded-[6px] px-4 py-2 text-[var(--muted)] transition-colors peer-checked:bg-white peer-checked:text-[var(--primary)] peer-checked:shadow-[0_1px_1px_rgb(0_0_0_/_0.05)]">
                     {option.label}
                   </span>
                 </label>
@@ -221,7 +252,7 @@ function TargetForm({
           <Button href="/targets" type="button" variant="ghost">
             Batal
           </Button>
-          <Button className="px-8" type="submit">
+          <Button className="px-8" isLoading={isSubmitting} type="submit">
             {submitLabel}
             {mode === 'create' ? <span aria-hidden="true">-&gt;</span> : null}
           </Button>
@@ -231,60 +262,17 @@ function TargetForm({
   );
 }
 
-const fieldClassName =
-  'h-[46px] w-full rounded-[var(--radius-sm)] border border-[var(--input-border)] bg-[var(--background)] px-[17px] text-base font-normal text-[var(--foreground)] transition-colors placeholder:text-[#6b7280] focus:border-[var(--primary-600)]';
-
-function Field({
-  children,
-  className,
-  helperText,
-  label,
-  optional = false,
-  required = false,
+function TargetCard({
+  isSubmitting,
+  onArchive,
+  onUpdate,
+  target,
 }: {
-  children: ReactNode;
-  className?: string;
-  helperText?: string;
-  label: string;
-  optional?: boolean;
-  required?: boolean;
+  isSubmitting: boolean;
+  onArchive: (targetId: string) => void;
+  onUpdate: (event: FormEvent<HTMLFormElement>, targetId: string) => void;
+  target: TargetApplication;
 }) {
-  return (
-    <label className={cn('block', className)}>
-      <span className="block text-xs font-semibold uppercase leading-3 tracking-[0.05em] text-[#404848]">
-        {label} {required ? <span className="text-[var(--danger)]">*</span> : null}
-        {optional ? <span className="font-normal text-[var(--muted)]">(Opsional)</span> : null}
-      </span>
-      {helperText ? (
-        <span className="mt-1 block text-xs leading-4 text-[var(--muted)]">{helperText}</span>
-      ) : null}
-      <span className="mt-2 block">{children}</span>
-    </label>
-  );
-}
-
-function Separator() {
-  return <div className="h-px w-full bg-[#e5e5e5]" />;
-}
-
-function hasValue(value: string | null | undefined) {
-  return Boolean(value?.trim());
-}
-
-function targetCompleteness(target: TargetApplication) {
-  const fields = [
-    hasValue(target.role),
-    hasValue(target.company),
-    hasValue(target.industry),
-    hasValue(target.jobDescription),
-    hasValue(target.skillRequirements),
-    hasValue(target.candidateSummary),
-  ];
-
-  return Math.round((fields.filter(Boolean).length / fields.length) * 100);
-}
-
-function TargetCard({ target }: { target: TargetApplication }) {
   const completeness = targetCompleteness(target);
 
   return (
@@ -340,17 +328,23 @@ function TargetCard({ target }: { target: TargetApplication }) {
         </summary>
         <div className="mt-5">
           <TargetForm
-            action={updateTargetAction}
+            isSubmitting={isSubmitting}
             mode="edit"
+            onSubmit={(event) => onUpdate(event, target.id)}
             submitLabel="Simpan perubahan"
             target={target}
           />
-          <form action={archiveTargetAction} className="mt-4">
-            <input name="targetId" type="hidden" value={target.id} />
-            <Button size="sm" type="submit" variant="danger">
+          <div className="mt-4">
+            <Button
+              isLoading={isSubmitting}
+              onClick={() => onArchive(target.id)}
+              size="sm"
+              type="button"
+              variant="danger"
+            >
               Arsipkan
             </Button>
-          </form>
+          </div>
         </div>
       </details>
     </Card>
@@ -372,17 +366,87 @@ function EmptyTargets() {
   );
 }
 
-export default async function TargetsPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ new?: string }>;
-}) {
-  const user = await requireAuth();
-  const cookieHeader = (await cookies()).toString();
-  const response = await listTargets({ status: 'active', cookie: cookieHeader });
-  const targets = response.data?.targets ?? [];
-  const params = searchParams ? await searchParams : {};
-  const isCreating = params.new === '1';
+function TargetsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const isCreating = searchParams.get('new') === '1';
+  const [targets, setTargets] = useState<TargetApplication[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTargets = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await listTargets({ status: 'active' });
+      if (response.error) {
+        setError(response.error.message);
+        setTargets([]);
+        return;
+      }
+
+      setTargets(response.data.targets);
+    } catch {
+      setError('Target lamaran belum bisa dimuat.');
+      setTargets([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadTargets();
+  }, [loadTargets]);
+
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    const response = await createTarget(payloadFromFormData(new FormData(event.currentTarget)));
+    setIsSubmitting(false);
+
+    if (response.error) {
+      setError(response.error.message);
+      return;
+    }
+
+    router.push('/targets');
+    await loadTargets();
+  }
+
+  async function handleUpdate(event: FormEvent<HTMLFormElement>, targetId: string) {
+    event.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+
+    const response = await updateTarget(targetId, payloadFromFormData(new FormData(event.currentTarget)));
+    setIsSubmitting(false);
+
+    if (response.error) {
+      setError(response.error.message);
+      return;
+    }
+
+    await loadTargets();
+  }
+
+  async function handleArchive(targetId: string) {
+    setIsSubmitting(true);
+    setError(null);
+
+    const response = await archiveTarget(targetId);
+    setIsSubmitting(false);
+
+    if (response.error) {
+      setError(response.error.message);
+      return;
+    }
+
+    setTargets((current) => current.filter((target) => target.id !== targetId));
+  }
 
   if (isCreating) {
     return (
@@ -391,7 +455,6 @@ export default async function TargetsPage({
         mainClassName="min-h-full max-w-none bg-[#f9f8f6] px-6 py-6 lg:px-0 lg:py-6"
         showPageHeader={false}
         title="Buat Target Lamaran"
-        user={user}
       >
         <div className="mx-auto flex w-full max-w-[800px] flex-col gap-6 pb-24">
           <div className="flex items-center">
@@ -411,7 +474,12 @@ export default async function TargetsPage({
               </p>
             </div>
           </div>
-          <TargetForm action={createTargetAction} submitLabel="Simpan & Lanjut ke Interview" />
+          <TargetForm
+            error={error}
+            isSubmitting={isSubmitting}
+            onSubmit={handleCreate}
+            submitLabel="Simpan & Lanjut ke Interview"
+          />
         </div>
       </AppShell>
     );
@@ -422,9 +490,14 @@ export default async function TargetsPage({
       activeHref="/targets"
       description="Kelola konteks posisi, industri, job description, skill, dan pengalaman untuk simulasi interview."
       title="Target Lamaran"
-      user={user}
     >
       <div className="space-y-6">
+        {error ? (
+          <Card className="border-[#f4b8b8] bg-[#fff5f5] p-4 text-sm font-semibold text-[var(--danger)]">
+            {error}
+          </Card>
+        ) : null}
+
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-[var(--font-jakarta)] text-xl font-normal leading-8 text-[var(--foreground)]">
@@ -438,10 +511,24 @@ export default async function TargetsPage({
         </div>
 
         <section className="space-y-4 border-t border-[#e5e5e5] pt-4">
-          {targets.length > 0 ? (
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[0, 1, 2, 3].map((item) => (
+                <Card className="h-56 animate-pulse bg-white/60 p-4" key={item}>
+                  <span className="sr-only">Memuat target</span>
+                </Card>
+              ))}
+            </div>
+          ) : targets.length > 0 ? (
             <div className="grid gap-4 md:grid-cols-2">
               {targets.map((target) => (
-                <TargetCard key={target.id} target={target} />
+                <TargetCard
+                  isSubmitting={isSubmitting}
+                  key={target.id}
+                  onArchive={handleArchive}
+                  onUpdate={handleUpdate}
+                  target={target}
+                />
               ))}
             </div>
           ) : (
@@ -450,5 +537,25 @@ export default async function TargetsPage({
         </section>
       </div>
     </AppShell>
+  );
+}
+
+export default function TargetsPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell
+          activeHref="/targets"
+          description="Kelola konteks lamaran yang dipakai untuk interview."
+          title="Target Lamaran"
+        >
+          <Card className="h-56 animate-pulse bg-white/60 p-4">
+            <span className="sr-only">Memuat target</span>
+          </Card>
+        </AppShell>
+      }
+    >
+      <TargetsPageContent />
+    </Suspense>
   );
 }

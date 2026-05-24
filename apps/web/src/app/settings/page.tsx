@@ -1,11 +1,13 @@
+'use client';
+
 import { AppShell } from '@/components/layout/app-shell';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import { requireAuth } from '@/lib/auth-server';
+import { useCurrentUser } from '@/lib/use-current-user';
 
-export default async function SettingsPage() {
-  const user = await requireAuth();
+export default function SettingsPage() {
+  const { user, isLoading } = useCurrentUser();
 
   return (
     <AppShell
@@ -15,7 +17,7 @@ export default async function SettingsPage() {
       user={user}
     >
       <Card className="space-y-5 p-6">
-        <Input disabled label="Nama" placeholder={user.name} />
+        <Input disabled label="Nama" placeholder={isLoading ? 'Memuat akun...' : (user?.name ?? 'Pengguna')} />
         <Select
           disabled
           label="Preferensi bahasa interview"

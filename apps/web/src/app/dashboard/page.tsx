@@ -1,37 +1,90 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import type { TargetApplication } from '@intervue/shared';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScoreMeter } from '@/components/voice/score-meter';
 import { StatusChip } from '@/components/voice/status-chip';
-import { requireAuth } from '@/lib/auth-server';
 import { listTargets } from '@/lib/api-client';
-import { cookies } from 'next/headers';
 
-export default async function DashboardPage() {
-  const user = await requireAuth();
-  const cookieHeader = (await cookies()).toString();
-  const targetResponse = await listTargets({ status: 'active', cookie: cookieHeader });
-  const activeTargets = targetResponse.data?.targets ?? [];
+type LoadState =
+  | { status: 'loading'; targets: TargetApplication[]; error: null }
+  | { status: 'ready'; targets: TargetApplication[]; error: null }
+  | { status: 'error'; targets: TargetApplication[]; error: string };
+
+export default function DashboardPage() {
+  const [state, setState] = useState<LoadState>({
+    status: 'loading',
+    targets: [],
+    error: null,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    listTargets({ status: 'active' })
+      .then((response) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (response.error) {
+          setState({ status: 'error', targets: [], error: response.error.message });
+          return;
+        }
+
+        setState({ status: 'ready', targets: response.data.targets, error: null });
+      })
+      .catch(() => {
+        if (isMounted) {
+          setState({
+            status: 'error',
+            targets: [],
+            error: 'Dashboard belum bisa memuat target aktif.',
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activeTargets = state.targets;
   const recentTargets = activeTargets.slice(0, 3);
+  const isLoading = state.status === 'loading';
 
   return (
     <AppShell
       activeHref="/dashboard"
       description="Ringkasan workspace latihan interview dan target lamaran aktif."
       title="Dashboard"
-      user={user}
     >
+      {state.error ? (
+        <Card className="mb-5 border-[#f4b8b8] bg-[#fff5f5] p-4 text-sm font-semibold text-[var(--danger)]">
+          {state.error}
+        </Card>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <Card className="relative overflow-hidden rounded-[var(--radius-lg)] p-7">
           <div className="absolute right-0 top-0 h-44 w-44 translate-x-16 -translate-y-16 rounded-full bg-[var(--accent)]/30 blur-3xl" />
           <Badge tone={activeTargets.length > 0 ? 'success' : 'primary'}>
-            {activeTargets.length > 0 ? `${activeTargets.length} target aktif` : 'Belum ada target'}
+            {isLoading
+              ? 'Memuat target'
+              : activeTargets.length > 0
+                ? `${activeTargets.length} target aktif`
+                : 'Belum ada target'}
           </Badge>
           <h2 className="relative mt-5 max-w-2xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.03em] text-[var(--foreground)]">
-            {activeTargets.length > 0
-              ? 'Lanjutkan latihan berbasis target'
-              : 'Buat target lamaran pertama'}
+            {isLoading
+              ? 'Menyiapkan dashboard latihan'
+              : activeTargets.length > 0
+                ? 'Lanjutkan latihan berbasis target'
+                : 'Buat target lamaran pertama'}
           </h2>
           <p className="relative mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {activeTargets.length > 0
@@ -66,7 +119,7 @@ export default async function DashboardPage() {
         {[
           [
             'Target aktif',
-            String(activeTargets.length),
+            isLoading ? '...' : String(activeTargets.length),
             activeTargets.length > 0
               ? 'Target siap dipakai untuk simulasi interview.'
               : 'Tambahkan target sebelum simulasi penuh.',
@@ -87,7 +140,15 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {recentTargets.length > 0 ? (
+      {isLoading ? (
+        <section className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <Card className="h-44 animate-pulse rounded-[var(--radius-lg)] bg-white/60 p-5" key={item}>
+              <span className="sr-only">Memuat target</span>
+            </Card>
+          ))}
+        </section>
+      ) : recentTargets.length > 0 ? (
         <section className="mt-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-[var(--font-jakarta)] text-xl font-extrabold text-[var(--foreground)]">

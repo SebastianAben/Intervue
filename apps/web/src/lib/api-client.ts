@@ -78,6 +78,10 @@ export async function logout() {
   });
 }
 
+export async function getMe() {
+  return apiRequest<AuthPayload>('/auth/me');
+}
+
 export async function listTargets({
   status = 'active',
   cookie,

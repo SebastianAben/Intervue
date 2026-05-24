@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { logout } from '@/lib/api-client';
+import { clearCachedUser } from '@/lib/use-current-user';
 
 export type LogoutButtonProps = {
   className?: string;
@@ -24,6 +25,7 @@ export function LogoutButton({
   async function handleLogout() {
     setIsLoading(true);
     await logout();
+    clearCachedUser();
     router.push('/login');
     router.refresh();
   }

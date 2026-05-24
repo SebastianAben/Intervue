@@ -1,11 +1,13 @@
+'use client';
+
 import type { InterviewSessionDetail, InterviewTurn, SessionReport } from '@intervue/shared';
-import { cookies } from 'next/headers';
+import { Suspense, useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScoreMeter } from '@/components/voice/score-meter';
-import { requireAuth } from '@/lib/auth-server';
 import { getReport, getSession } from '@/lib/api-client';
 
 function average(values: number[]) {
@@ -170,23 +172,52 @@ function ReportSummary({ report }: { report: SessionReport | null }) {
   );
 }
 
-export default async function ReportsPage({
-  searchParams,
-}: {
-  searchParams?: Promise<{ sessionId?: string }>;
-}) {
-  const user = await requireAuth();
-  const params = searchParams ? await searchParams : {};
-  const cookieHeader = (await cookies()).toString();
-  const reportResponse = params.sessionId
-    ? await getReport(params.sessionId, { cookie: cookieHeader })
-    : null;
-  const sessionFallbackResponse =
-    params.sessionId && reportResponse?.error
-      ? await getSession(params.sessionId, { cookie: cookieHeader })
-      : null;
-  const session = reportResponse?.data?.session ?? sessionFallbackResponse?.data?.session ?? null;
-  const report = reportResponse?.data?.report ?? null;
+function ReportsPageContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('sessionId');
+  const [session, setSession] = useState<InterviewSessionDetail | null>(null);
+  const [report, setReport] = useState<SessionReport | null>(null);
+  const [isLoading, setIsLoading] = useState(Boolean(sessionId));
+  const [error, setError] = useState<string | null>(null);
+
+  const loadReport = useCallback(async () => {
+    if (!sessionId) {
+      setSession(null);
+      setReport(null);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    const reportResponse = await getReport(sessionId);
+
+    if (reportResponse.data) {
+      setSession(reportResponse.data.session);
+      setReport(reportResponse.data.report);
+      setIsLoading(false);
+      return;
+    }
+
+    const fallbackResponse = await getSession(sessionId);
+    if (fallbackResponse.data) {
+      setSession(fallbackResponse.data.session);
+      setReport(null);
+      setIsLoading(false);
+      return;
+    }
+
+    setSession(null);
+    setReport(null);
+    setError(fallbackResponse.error?.message ?? reportResponse.error?.message ?? 'Report gagal dimuat.');
+    setIsLoading(false);
+  }, [sessionId]);
+
+  useEffect(() => {
+    void loadReport();
+  }, [loadReport]);
+
   const turns = session ? completedTurns(session) : [];
   const answerScores = turns.flatMap((turn) =>
     turn.evaluation?.answerScore === undefined ? [] : [turn.evaluation.answerScore],
@@ -206,9 +237,8 @@ export default async function ReportsPage({
       activeHref="/reports"
       description="Summary akhir dari sesi interview yang sudah selesai."
       title="Report"
-      user={user}
     >
-      {!params.sessionId ? (
+      {!sessionId ? (
         <Card className="p-6">
           <Badge tone="neutral">Report</Badge>
           <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold">
@@ -223,15 +253,40 @@ export default async function ReportsPage({
             </Button>
           </div>
         </Card>
-      ) : reportResponse?.error && sessionFallbackResponse?.error ? (
+      ) : isLoading ? (
+        <Card className="p-6">
+          <Badge tone="neutral">Memuat</Badge>
+          <div className="mt-5 grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center">
+            <div className="h-56 animate-pulse rounded-full bg-[var(--surface-muted)]" />
+            <div className="space-y-4">
+              <div className="h-8 w-2/3 animate-pulse rounded bg-[var(--surface-muted)]" />
+              <div className="h-4 w-full animate-pulse rounded bg-[var(--surface-muted)]" />
+              <div className="h-4 w-5/6 animate-pulse rounded bg-[var(--surface-muted)]" />
+              <div className="grid gap-3 sm:grid-cols-3">
+                {['speech', 'nonverbal', 'questions'].map((item) => (
+                  <div
+                    className="h-24 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-muted)]"
+                    key={item}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </Card>
+      ) : error ? (
         <Card className="border-[#f4b8b8] bg-[#fff5f5] p-6">
           <Badge tone="warning">Report error</Badge>
           <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--danger)]">
             Report tidak bisa dibuka
           </h2>
           <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            {sessionFallbackResponse.error.message}
+            {error}
           </p>
+          <div className="mt-5">
+            <Button onClick={loadReport} variant="outline">
+              Coba lagi
+            </Button>
+          </div>
         </Card>
       ) : session ? (
         <div className="space-y-5">
@@ -291,5 +346,26 @@ export default async function ReportsPage({
         </div>
       ) : null}
     </AppShell>
+  );
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell
+          activeHref="/reports"
+          description="Summary akhir dari sesi interview yang sudah selesai."
+          title="Report"
+        >
+          <Card className="p-6">
+            <Badge tone="neutral">Memuat</Badge>
+            <div className="mt-5 h-56 animate-pulse rounded-[var(--radius-sm)] bg-[var(--surface-muted)]" />
+          </Card>
+        </AppShell>
+      }
+    >
+      <ReportsPageContent />
+    </Suspense>
   );
 }

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
@@ -5,6 +7,7 @@ import type { AuthUser } from '@intervue/shared';
 import { LogoutButton } from '@/components/auth/logout-button';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
+import { useCurrentUser } from '@/lib/use-current-user';
 
 export type AppNavItem = {
   label: string;
@@ -37,7 +40,7 @@ export type AppShellProps = {
   activeHref: string;
   title: string;
   description?: string;
-  user: AuthUser;
+  user?: AuthUser | null;
   mainClassName?: string;
   showPageHeader?: boolean;
   children: ReactNode;
@@ -52,6 +55,10 @@ export function AppShell({
   showPageHeader = true,
   children,
 }: AppShellProps) {
+  const auth = useCurrentUser(user ?? null);
+  const shellUser = user ?? auth.user;
+  const displayName = shellUser?.name ?? (auth.isLoading ? 'Memuat akun...' : 'Pengguna');
+
   return (
     <div className="min-h-[100dvh] bg-[var(--background)] lg:grid lg:h-[100dvh] lg:grid-cols-[280px_minmax(0,1fr)] lg:overflow-hidden">
       <aside className="hidden min-h-[100dvh] flex-col border-r border-white/80 bg-white/72 p-4 shadow-[0_20px_70px_rgb(18_60_55_/_0.08)] backdrop-blur lg:flex lg:h-[100dvh] lg:min-h-0">
@@ -73,11 +80,11 @@ export function AppShell({
 
         <div className="mb-6 flex h-[64px] w-full items-center rounded-[var(--radius-md)] border border-white/80 bg-[var(--surface-muted)] p-[9px]">
           <div className="mr-3 grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white font-[var(--font-jakarta)] text-sm font-black text-[var(--primary)] shadow-[0_8px_20px_rgb(18_60_55_/_0.08)]">
-            {getInitials(user.name)}
+            {shellUser ? getInitials(shellUser.name) : '...'}
           </div>
           <div className="min-w-0 overflow-hidden">
             <p className="truncate text-sm font-semibold leading-5 text-[var(--foreground)]">
-              {user.name}
+              {displayName}
             </p>
             <p className="truncate text-xs font-semibold leading-3 text-[var(--muted)]">
               Persiapan interview
