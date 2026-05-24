@@ -230,7 +230,7 @@ function HistoryPageContent() {
   return (
     <AppShell
       activeHref="/history"
-      description="Daftar sesi interview yang sudah selesai, gagal, atau dihentikan."
+      description="Daftar sesi interview yang sudah selesai dan tersimpan."
       title="History"
     >
       <div className="space-y-5">
@@ -243,8 +243,8 @@ function HistoryPageContent() {
                 Riwayat latihan untuk membaca progres per target.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
-                Filter berdasarkan target aktif, buka report sesi selesai, atau cek detail sesi
-                yang gagal agar langkah retry berikutnya lebih jelas.
+                Filter berdasarkan target aktif, buka report sesi selesai, dan pantau progres
+                latihan dari sesi yang sudah tersimpan.
               </p>
             </div>
 
@@ -343,8 +343,8 @@ function HistoryPageContent() {
             </h2>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
               {selectedTargetId !== 'all'
-                ? `${selectedTarget?.role ?? 'Target terpilih'} belum punya sesi completed, abandoned, atau failed.`
-                : 'History akan menampilkan target, mode, status, skor, jumlah pertanyaan, tanggal sesi, dan akses report.'}
+                ? `${selectedTarget?.role ?? 'Target terpilih'} belum punya sesi selesai yang tersimpan.`
+                : 'History akan menampilkan target, mode, skor, jumlah pertanyaan, tanggal sesi, dan akses report untuk sesi yang selesai.'}
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button href="/interview">Mulai interview</Button>

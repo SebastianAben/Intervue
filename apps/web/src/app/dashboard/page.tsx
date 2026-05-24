@@ -1,49 +1,86 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import type { TargetApplication } from '@intervue/shared';
+import { useEffect, useMemo, useState } from 'react';
+import type { HistorySessionSummary, TargetApplication } from '@intervue/shared';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScoreMeter } from '@/components/voice/score-meter';
 import { StatusChip } from '@/components/voice/status-chip';
-import { listTargets } from '@/lib/api-client';
+import { listHistory, listTargets } from '@/lib/api-client';
 
 type LoadState =
-  | { status: 'loading'; targets: TargetApplication[]; error: null }
-  | { status: 'ready'; targets: TargetApplication[]; error: null }
-  | { status: 'error'; targets: TargetApplication[]; error: string };
+  | { status: 'loading'; targets: TargetApplication[]; sessions: HistorySessionSummary[]; error: null }
+  | { status: 'ready'; targets: TargetApplication[]; sessions: HistorySessionSummary[]; error: null }
+  | { status: 'error'; targets: TargetApplication[]; sessions: HistorySessionSummary[]; error: string };
+
+function getSessionDate(session: HistorySessionSummary) {
+  return session.endedAt ?? session.updatedAt ?? session.createdAt;
+}
+
+function isWithinLastSevenDays(dateValue: string, now = new Date()) {
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  return date >= sevenDaysAgo && date <= now;
+}
+
+function dateKey(dateValue: string) {
+  return new Date(dateValue).toISOString().slice(0, 10);
+}
 
 export default function DashboardPage() {
   const [state, setState] = useState<LoadState>({
     status: 'loading',
     targets: [],
+    sessions: [],
     error: null,
   });
 
   useEffect(() => {
     let isMounted = true;
 
-    listTargets({ status: 'active' })
-      .then((response) => {
+    Promise.all([listTargets({ status: 'active' }), listHistory()])
+      .then(([targetResponse, historyResponse]) => {
         if (!isMounted) {
           return;
         }
 
-        if (response.error) {
-          setState({ status: 'error', targets: [], error: response.error.message });
+        if (targetResponse.error || historyResponse.error) {
+          setState({
+            status: 'error',
+            targets: targetResponse.data?.targets ?? [],
+            sessions: historyResponse.data?.sessions ?? [],
+            error:
+              targetResponse.error?.message ??
+              historyResponse.error?.message ??
+              'Dashboard belum bisa memuat data sesi.',
+          });
           return;
         }
 
-        setState({ status: 'ready', targets: response.data.targets, error: null });
+        setState({
+          status: 'ready',
+          targets: targetResponse.data.targets,
+          sessions: historyResponse.data.sessions,
+          error: null,
+        });
       })
       .catch(() => {
         if (isMounted) {
           setState({
             status: 'error',
             targets: [],
-            error: 'Dashboard belum bisa memuat target aktif.',
+            sessions: [],
+            error: 'Dashboard belum bisa memuat target aktif dan status sesi.',
           });
         }
       });
@@ -54,8 +91,28 @@ export default function DashboardPage() {
   }, []);
 
   const activeTargets = state.targets;
+  const sessions = state.sessions;
   const recentTargets = activeTargets.slice(0, 3);
   const isLoading = state.status === 'loading';
+  const latestScoredSession = useMemo(
+    () =>
+      sessions.find(
+        (session) => session.status === 'completed' && session.overallScore !== null,
+      ),
+    [sessions],
+  );
+  const readinessScore = latestScoredSession?.overallScore ?? 0;
+  const consistencyScore = useMemo(() => {
+    const activeDayKeys = new Set(
+      sessions
+        .map(getSessionDate)
+        .filter((sessionDate) => isWithinLastSevenDays(sessionDate))
+        .map(dateKey),
+    );
+
+    return Math.min(100, Math.round((activeDayKeys.size / 5) * 100));
+  }, [sessions]);
+  const reportCount = sessions.filter((session) => session.hasReport).length;
 
   return (
     <AppShell
@@ -109,8 +166,18 @@ export default function DashboardPage() {
             <StatusChip status="ready" />
           </div>
           <div className="mt-6 space-y-5">
-            <ScoreMeter label="Kesiapan interview" value={0} />
-            <ScoreMeter label="Konsistensi latihan" value={0} />
+            <ScoreMeter
+              helperText={
+                latestScoredSession ? 'Berdasarkan sesi selesai terbaru' : 'Selesaikan sesi untuk melihat skor'
+              }
+              label="Kesiapan interview"
+              value={readinessScore}
+            />
+            <ScoreMeter
+              helperText={sessions.length > 0 ? '7 hari terakhir' : 'Mulai latihan untuk melihat progres'}
+              label="Konsistensi latihan"
+              value={consistencyScore}
+            />
           </div>
         </Card>
       </div>
@@ -124,8 +191,16 @@ export default function DashboardPage() {
               ? 'Target siap dipakai untuk simulasi interview.'
               : 'Tambahkan target sebelum simulasi penuh.',
           ],
-          ['Sesi latihan', '0', 'History akan muncul setelah interview.'],
-          ['Report tersimpan', '0', 'Report dibuat saat sesi selesai.'],
+          [
+            'Sesi latihan',
+            isLoading ? '...' : String(sessions.length),
+            sessions.length > 0 ? 'History sesi latihan sudah tersimpan.' : 'History akan muncul setelah interview.',
+          ],
+          [
+            'Report tersimpan',
+            isLoading ? '...' : String(reportCount),
+            reportCount > 0 ? 'Report deterministik siap dibuka.' : 'Report dibuat saat sesi selesai.',
+          ],
         ].map(([label, value, description]) => (
           <div
             className="grid gap-3 border-b border-[var(--border)] p-5 last:border-b-0 sm:grid-cols-[180px_90px_1fr] sm:items-center"

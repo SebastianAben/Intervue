@@ -37,6 +37,10 @@ export function clearCachedUser() {
   cachedUser = null;
 }
 
+export function cacheCurrentUser(user: AuthUser) {
+  cachedUser = user;
+}
+
 export function useCurrentUser(initialUser: AuthUser | null = null) {
   const [user, setUser] = useState<AuthUser | null>(initialUser ?? cachedUser ?? null);
   const [isLoading, setIsLoading] = useState(cachedUser === undefined && !initialUser);

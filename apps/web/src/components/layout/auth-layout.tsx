@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/card';
 
@@ -53,6 +54,12 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
             />
           </a>
           <Card className="border-transparent bg-transparent p-0 shadow-none">
+            <Link
+              className="mb-6 inline-flex h-9 items-center rounded-[var(--radius-sm)] px-3 text-sm font-bold text-[var(--primary-600)] transition-colors hover:bg-[rgb(18_60_55_/_0.07)] active:translate-y-px"
+              href="/"
+            >
+              &lt;- Kembali ke beranda
+            </Link>
             <h1 className="font-[var(--font-jakarta)] text-4xl font-black leading-none tracking-[-0.035em] text-[var(--foreground)]">
               {title}
             </h1>

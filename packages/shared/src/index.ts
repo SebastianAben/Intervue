@@ -38,6 +38,16 @@ export type AuthResponse = ApiResponse<{
   user: AuthUser;
 }>;
 
+export type UpdateAccountPayload = {
+  name: string;
+  status: AuthUser['status'];
+  defaultLanguage: AuthUser['defaultLanguage'];
+};
+
+export type DeleteAccountResponse = ApiResponse<{
+  deleted: true;
+}>;
+
 export type TargetStatus = 'active' | 'archived';
 
 export type JobLevel = 'intern' | 'fresh_graduate' | 'junior' | 'mid_level';

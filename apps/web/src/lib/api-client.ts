@@ -4,6 +4,7 @@ import type {
   AuthResponse,
   CreateSessionResponse,
   CreateSessionPayload,
+  DeleteAccountResponse,
   HistoryListResponse,
   ParseCvResponse,
   ReportDetailResponse,
@@ -14,6 +15,7 @@ import type {
   TargetDetailResponse,
   TargetListResponse,
   TargetStatus,
+  UpdateAccountPayload,
 } from '@intervue/shared';
 
 const browserApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/backend';
@@ -78,8 +80,22 @@ export async function logout() {
   });
 }
 
+export async function deleteAccount(payload: { password: string }) {
+  return apiRequest<NonNullable<DeleteAccountResponse['data']>>('/auth/account', {
+    method: 'DELETE',
+    body: payload,
+  });
+}
+
 export async function getMe() {
   return apiRequest<AuthPayload>('/auth/me');
+}
+
+export async function updateAccount(payload: UpdateAccountPayload) {
+  return apiRequest<AuthPayload>('/auth/me', {
+    method: 'PATCH',
+    body: payload,
+  });
 }
 
 export async function listTargets({

@@ -1,6 +1,11 @@
 'use client';
 
-import type { InterviewSessionDetail, InterviewTurn, SessionReport } from '@intervue/shared';
+import type {
+  HistorySessionSummary,
+  InterviewSessionDetail,
+  InterviewTurn,
+  SessionReport,
+} from '@intervue/shared';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
@@ -8,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScoreMeter } from '@/components/voice/score-meter';
-import { getReport, getSession } from '@/lib/api-client';
+import { getReport, getSession, listHistory } from '@/lib/api-client';
 
 function average(values: number[]) {
   return values.length > 0
@@ -24,6 +29,69 @@ function completedTurns(session: InterviewSessionDetail) {
 
 function metricValue(value: number | null | undefined) {
   return value === null || value === undefined ? 'Tidak tersedia' : `${Math.round(value)}/100`;
+}
+
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return 'Belum tersedia';
+  }
+
+  return new Intl.DateTimeFormat('id-ID', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function ReportsSessionCard({ session }: { session: HistorySessionSummary }) {
+  const targetSubtitle = [session.targetCompany, session.targetIndustry].filter(Boolean).join(' - ');
+
+  return (
+    <Card className="p-5">
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_180px] lg:items-center">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge tone="success">Completed</Badge>
+            <Badge tone="neutral">
+              {session.mode === 'full_simulation' ? 'Full simulation' : 'Quick practice'}
+            </Badge>
+          </div>
+          <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-black leading-tight text-[var(--foreground)]">
+            {session.targetRole || 'Target interview'}
+          </h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-[var(--muted)]">
+            {targetSubtitle || 'Target lamaran tanpa perusahaan'}
+          </p>
+          <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+            <div className="rounded-[var(--radius-sm)] bg-[var(--surface-muted)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                Score
+              </p>
+              <p className="mt-1 text-xl font-black text-[var(--primary)]">
+                {session.overallScore === null ? 'N/A' : `${session.overallScore}/100`}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-sm)] bg-[var(--surface-muted)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                Questions
+              </p>
+              <p className="mt-1 text-xl font-black">
+                {session.completedQuestionCount}/{session.plannedQuestionCount}
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-sm)] bg-[var(--surface-muted)] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+                Selesai
+              </p>
+              <p className="mt-1 font-bold">{formatDateTime(session.endedAt ?? session.updatedAt)}</p>
+            </div>
+          </div>
+        </div>
+        <Button className="w-full" href={`/reports?sessionId=${session.id}`}>
+          Buka analitik
+        </Button>
+      </div>
+    </Card>
+  );
 }
 
 function ReportTurnCard({ turn }: { turn: InterviewTurn }) {
@@ -178,6 +246,8 @@ function ReportsPageContent() {
   const [session, setSession] = useState<InterviewSessionDetail | null>(null);
   const [report, setReport] = useState<SessionReport | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(sessionId));
+  const [historySessions, setHistorySessions] = useState<HistorySessionSummary[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(!sessionId);
   const [error, setError] = useState<string | null>(null);
 
   const loadReport = useCallback(async () => {
@@ -186,9 +256,21 @@ function ReportsPageContent() {
       setReport(null);
       setError(null);
       setIsLoading(false);
+      setIsHistoryLoading(true);
+
+      const historyResponse = await listHistory();
+      setHistorySessions(historyResponse.data?.sessions ?? []);
+
+      if (historyResponse.error) {
+        setError(historyResponse.error.message);
+      }
+
+      setIsHistoryLoading(false);
       return;
     }
 
+    setHistorySessions([]);
+    setIsHistoryLoading(false);
     setIsLoading(true);
     setError(null);
     const reportResponse = await getReport(sessionId);
@@ -235,24 +317,69 @@ function ReportsPageContent() {
   return (
     <AppShell
       activeHref="/reports"
-      description="Summary akhir dari sesi interview yang sudah selesai."
-      title="Report"
+      description="Analitik dan report dari sesi interview yang sudah selesai."
+      title="Analitik"
     >
       {!sessionId ? (
-        <Card className="p-6">
-          <Badge tone="neutral">Report</Badge>
-          <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold">
-            Pilih sesi dari full simulation
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-            Report lengkap akan terbuka otomatis setelah full simulation selesai.
-          </p>
-          <div className="mt-6">
-            <Button href="/interview" variant="outline">
-              Mulai interview
-            </Button>
-          </div>
-        </Card>
+        <div className="space-y-5">
+          <Card className="p-6">
+            <Badge tone="neutral">
+              {isHistoryLoading ? 'Memuat sesi' : `${historySessions.length} sesi selesai`}
+            </Badge>
+            <h2 className="mt-4 font-[var(--font-jakarta)] text-3xl font-black tracking-[-0.03em] text-[var(--foreground)]">
+              Pilih sesi untuk melihat analitik.
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+              Analitik dibuat dari sesi interview yang sudah selesai. Buka salah satu sesi untuk
+              melihat skor, evaluasi jawaban, sinyal speech, dan metrik non-verbal.
+            </p>
+          </Card>
+
+          {error ? (
+            <Card className="border-[#f4b8b8] bg-[#fff5f5] p-6">
+              <Badge tone="warning">Analitik error</Badge>
+              <h2 className="mt-4 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--danger)]">
+                Daftar sesi belum bisa dimuat
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{error}</p>
+              <div className="mt-5">
+                <Button onClick={loadReport} variant="outline">
+                  Coba lagi
+                </Button>
+              </div>
+            </Card>
+          ) : null}
+
+          {isHistoryLoading ? (
+            <div className="space-y-4">
+              {[0, 1, 2].map((item) => (
+                <Card className="h-40 animate-pulse bg-white/60 p-5" key={item}>
+                  <span className="sr-only">Memuat sesi analitik</span>
+                </Card>
+              ))}
+            </div>
+          ) : historySessions.length > 0 ? (
+            <section className="space-y-4">
+              {historySessions.map((historySession) => (
+                <ReportsSessionCard key={historySession.id} session={historySession} />
+              ))}
+            </section>
+          ) : !error ? (
+            <Card className="p-7 sm:p-8">
+              <Badge tone="primary">Belum ada data</Badge>
+              <h2 className="mt-5 max-w-2xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.03em] text-[var(--foreground)]">
+                Selesaikan satu sesi untuk membuka analitik.
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+                Setelah interview selesai, sesi akan tersimpan di Riwayat Sesi dan muncul di
+                halaman Analitik.
+              </p>
+              <div className="mt-6">
+                <Button href="/interview">Mulai interview</Button>
+              </div>
+            </Card>
+          ) : null}
+        </div>
       ) : isLoading ? (
         <Card className="p-6">
           <Badge tone="neutral">Memuat</Badge>
@@ -355,8 +482,8 @@ export default function ReportsPage() {
       fallback={
         <AppShell
           activeHref="/reports"
-          description="Summary akhir dari sesi interview yang sudah selesai."
-          title="Report"
+          description="Analitik dan report dari sesi interview yang sudah selesai."
+          title="Analitik"
         >
           <Card className="p-6">
             <Badge tone="neutral">Memuat</Badge>

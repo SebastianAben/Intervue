@@ -25,6 +25,16 @@ const loginSchema = z.object({
   password: z.string().min(1, 'Password is required.'),
 });
 
+const updateAccountSchema = z.object({
+  name: z.string().trim().min(2, 'Name is required.').max(120),
+  status: z.enum(['student', 'fresh_graduate', 'job_seeker', 'other']),
+  defaultLanguage: z.enum(['id', 'en']),
+});
+
+const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Password is required.'),
+});
+
 authRouter.get('/me', async (request, response, next) => {
   try {
     const user = await getRequestUser(request);
@@ -35,6 +45,35 @@ authRouter.get('/me', async (request, response, next) => {
     }
 
     response.json(ok({ user: toAuthUser(user) }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.patch('/me', async (request, response, next) => {
+  try {
+    const user = await getRequestUser(request);
+
+    if (!user) {
+      response.status(401).json(fail('UNAUTHORIZED', 'Please log in to continue.'));
+      return;
+    }
+
+    const parsed = updateAccountSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      response.status(400).json(fail('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid input.'));
+      return;
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: parsed.data,
+    });
+
+    response.json(ok({ user: toAuthUser(updatedUser) }));
   } catch (error) {
     next(error);
   }
@@ -107,6 +146,54 @@ authRouter.post('/login', async (request, response, next) => {
 
     setSessionCookie(response, user.id);
     response.json(ok({ user: toAuthUser(user) }));
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.delete('/account', async (request, response, next) => {
+  try {
+    const user = await getRequestUser(request);
+
+    if (!user) {
+      response.status(401).json(fail('UNAUTHORIZED', 'Please log in to continue.'));
+      return;
+    }
+
+    const parsed = deleteAccountSchema.safeParse(request.body);
+
+    if (!parsed.success) {
+      response.status(400).json(fail('VALIDATION_ERROR', parsed.error.issues[0]?.message ?? 'Invalid input.'));
+      return;
+    }
+
+    const passwordMatches = await bcrypt.compare(parsed.data.password, user.passwordHash);
+
+    if (!passwordMatches) {
+      response.status(400).json(fail('VALIDATION_ERROR', 'Password is incorrect.'));
+      return;
+    }
+
+    await prisma.$transaction(async (transaction) => {
+      await transaction.interviewSession.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+      await transaction.targetApplication.deleteMany({
+        where: {
+          userId: user.id,
+        },
+      });
+      await transaction.user.delete({
+        where: {
+          id: user.id,
+        },
+      });
+    });
+
+    clearSessionCookie(response);
+    response.json(ok({ deleted: true }));
   } catch (error) {
     next(error);
   }
