@@ -1,0 +1,171 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - dev
+      - main
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deployment environment
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-image:
+    name: Validate, build, and publish image
+    runs-on: ubuntu-latest
+    outputs:
+      target_branch: ${{ steps.image-metadata.outputs.target_branch }}
+
+    env:
+      DATABASE_URL: postgresql://intervue:intervue@localhost:5433/intervue
+      JWT_SECRET: ci-only-secret
+      GEMINI_API_KEY: ci-only-placeholder
+      GEMINI_MODEL: gemini-3.5-flash
+      CORS_ORIGIN: http://localhost:3000
+      NONVERBAL_INFERENCE_URL: http://127.0.0.1:8765/predict
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:4000/api
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: intervue
+          POSTGRES_USER: intervue
+          POSTGRES_PASSWORD: intervue
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U intervue -d intervue"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Apply database migrations
+        run: pnpm --filter @intervue/api exec prisma migrate deploy
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test API
+        run: pnpm --filter @intervue/api test
+
+      - name: Build
+        run: pnpm build
+
+      - name: Set image metadata
+        id: image-metadata
+        run: |
+          target_branch="${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.ref_name }}"
+          echo "target_branch=${target_branch}" >> "$GITHUB_OUTPUT"
+          echo "BACKEND_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/intervue-api" >> "$GITHUB_ENV"
+          echo "NONVERBAL_INFERENCE_IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/intervue-nonverbal-inference" >> "$GITHUB_ENV"
+          echo "BACKEND_IMAGE_TAG=${target_branch}" >> "$GITHUB_ENV"
+          echo "BACKEND_IMAGE_SHA_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+          echo "NONVERBAL_INFERENCE_IMAGE_TAG=${target_branch}" >> "$GITHUB_ENV"
+          echo "NONVERBAL_INFERENCE_IMAGE_SHA_TAG=sha-${GITHUB_SHA}" >> "$GITHUB_ENV"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ env.BACKEND_IMAGE_TAG }}
+            ${{ env.BACKEND_IMAGE }}:${{ env.BACKEND_IMAGE_SHA_TAG }}
+
+      - name: Build and push nonverbal inference image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ml/nonverbal/Dockerfile
+          push: true
+          tags: |
+            ${{ env.NONVERBAL_INFERENCE_IMAGE }}:${{ env.NONVERBAL_INFERENCE_IMAGE_TAG }}
+            ${{ env.NONVERBAL_INFERENCE_IMAGE }}:${{ env.NONVERBAL_INFERENCE_IMAGE_SHA_TAG }}
+
+      - name: Upload deployment files
+        uses: actions/upload-artifact@v4
+        with:
+          name: intervue-deployment-files
+          path: |
+            deploy/home-server/docker-compose.server.yml
+            deploy/home-server/.env.server.example
+            scripts/deploy-home-server.sh
+
+  deploy:
+    name: Deploy backend
+    needs: build-image
+    runs-on:
+      - self-hosted
+      - linux
+      - x64
+      - intervue-home
+    environment: ${{ format('intervue-{0}', needs.build-image.outputs.target_branch) }}
+    concurrency:
+      group: intervue-${{ needs.build-image.outputs.target_branch }}-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Download deployment files
+        uses: actions/download-artifact@v4
+        with:
+          name: intervue-deployment-files
+
+      - name: Prepare deploy script
+        run: chmod +x scripts/deploy-home-server.sh
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to home server
+        env:
+          DEPLOY_TARGET_BRANCH: ${{ needs.build-image.outputs.target_branch }}
+        run: scripts/deploy-home-server.sh

@@ -1,0 +1,90 @@
+{
+  "modelName": "nonverbal_interview_readiness_rf",
+  "modelVersion": "0.1.0",
+  "dataset": "yeray142/first-impressions-v2",
+  "annotationSource": "https://github.com/zishansami102/First-Impression",
+  "target": "interview_label",
+  "labelSource": "chalearn_annotation_mirror",
+  "runMode": "mvp",
+  "maxVideosPerSplit": 300,
+  "deleteVideoAfterExtraction": true,
+  "reuseExistingFeatures": true,
+  "primaryModelType": "RandomForestRegressor",
+  "primaryOutput": "score_0_100",
+  "recommendedOutput": "regressor_score_0_100",
+  "productionPipeline": "MediaPipe features -> RandomForestRegressor -> score_0_100 -> LLM",
+  "rawModelOutputRange": "0-1",
+  "rawOutputRange": "0-1",
+  "exportedScoreRange": "0-100",
+  "features": [
+    "face_detected_ratio",
+    "head_yaw_mean",
+    "head_yaw_std",
+    "head_pitch_mean",
+    "head_pitch_std",
+    "head_roll_mean",
+    "head_roll_std",
+    "mouth_movement_mean",
+    "mouth_movement_std",
+    "shoulder_movement_mean",
+    "shoulder_movement_std",
+    "hand_movement_mean",
+    "hand_movement_std",
+    "frame_count",
+    "analyzed_duration_seconds"
+  ],
+  "featureOrder": [
+    "face_detected_ratio",
+    "head_yaw_mean",
+    "head_yaw_std",
+    "head_pitch_mean",
+    "head_pitch_std",
+    "head_roll_mean",
+    "head_roll_std",
+    "mouth_movement_mean",
+    "mouth_movement_std",
+    "shoulder_movement_mean",
+    "shoulder_movement_std",
+    "hand_movement_mean",
+    "hand_movement_std",
+    "frame_count",
+    "analyzed_duration_seconds"
+  ],
+  "labelThresholdStrategy": "not_used_for_mvp",
+  "labelThresholds": null,
+  "classifierExperimentAvailable": true,
+  "experimentalLabelStrategies": {
+    "static_40_75": "Legacy baseline: low < 40, medium 40-74, high >= 75",
+    "train_tertile": "Analysis only: thresholds from train label quantiles 0.33 and 0.66",
+    "balanced_classifier": "Analysis only: RandomForestClassifier(class_weight=\"balanced\")"
+  },
+  "excludedFeatures": [
+    "transcription",
+    "gender",
+    "ethnicity",
+    "age"
+  ],
+  "notes": "MVP production output is a visual-only numeric score. Categorical labels are retained only as experimental analysis artifacts.",
+  "productionLabelStrategy": "not_used_for_mvp",
+  "classifierExperimentUsage": "analysis_only_not_mvp_inference",
+  "trainingSummary": {
+    "bestConfig": {
+      "n_estimators": 100,
+      "max_depth": 8,
+      "min_samples_leaf": 3,
+      "validation_mae": 0.12261277708382196
+    },
+    "rowCounts": {
+      "test": 300,
+      "train": 300,
+      "validation": 300
+    },
+    "validationMae": 0.12261277708382196,
+    "testMae": 0.11208784534984753,
+    "testRmse": 0.1444177690591729,
+    "testR2": 0.006970929027536821,
+    "experimentalStaticMacroF1": 0.36189993238674784,
+    "experimentalTertileMacroF1": 0.34534154262840827,
+    "classifierExperimentMacroF1": 0.4174252231094906
+  }
+}

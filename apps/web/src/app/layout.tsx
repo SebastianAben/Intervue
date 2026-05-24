@@ -1,21 +1,38 @@
 import type { Metadata } from 'next';
-import { Manrope, Plus_Jakarta_Sans } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Intervue',
+  title: {
+    default: 'Intervue',
+    template: '%s | Intervue',
+  },
   description: 'Latihan interview kerja dengan AI interviewer berbasis suara.',
+  icons: {
+    icon: [
+      { url: '/intervue-tab-20260523.ico?v=4', sizes: 'any' },
+      { url: '/intervue-tab-20260523.png?v=4', type: 'image/png' },
+      { url: '/brand/logo-display.png?v=4', type: 'image/png' },
+    ],
+    shortcut: '/intervue-tab-20260523.ico?v=4',
+    apple: '/intervue-touch-20260523.png?v=4',
+  },
+  openGraph: {
+    title: 'Intervue',
+    description: 'Latihan interview kerja dengan AI interviewer berbasis suara.',
+    type: 'website',
+  },
 };
 
-const manrope = Manrope({
+const geist = Geist({
   subsets: ['latin'],
-  variable: '--font-manrope',
+  variable: '--font-geist',
   display: 'swap',
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  variable: '--font-jakarta',
+  variable: '--font-geist-mono',
   display: 'swap',
 });
 
@@ -26,7 +43,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id">
-      <body className={`${manrope.variable} ${jakarta.variable}`}>{children}</body>
+      <head>
+        <link href="/intervue-tab-20260523.ico?v=4" rel="shortcut icon" />
+        <link href="/intervue-tab-20260523.ico?v=4" rel="icon" sizes="any" />
+        <link href="/intervue-tab-20260523.png?v=4" rel="icon" type="image/png" />
+        <link href="/intervue-touch-20260523.png?v=4" rel="apple-touch-icon" />
+      </head>
+      <body className={`${geist.variable} ${geistMono.variable}`}>{children}</body>
     </html>
   );
 }

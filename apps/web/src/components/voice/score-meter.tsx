@@ -3,10 +3,11 @@ import { cn } from '@/lib/cn';
 export type ScoreMeterProps = {
   value: number;
   label?: string;
+  helperText?: string;
   className?: string;
 };
 
-export function ScoreMeter({ value, label = 'Skor', className }: ScoreMeterProps) {
+export function ScoreMeter({ value, label = 'Skor', helperText, className }: ScoreMeterProps) {
   const normalized = Math.min(100, Math.max(0, value));
 
   return (
@@ -28,6 +29,7 @@ export function ScoreMeter({ value, label = 'Skor', className }: ScoreMeterProps
           style={{ width: `${normalized}%` }}
         />
       </div>
+      {helperText ? <p className="mt-2 text-xs font-medium text-[var(--muted)]">{helperText}</p> : null}
     </div>
   );
 }

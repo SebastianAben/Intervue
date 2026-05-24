@@ -90,6 +90,7 @@ model TargetApplication {
   interviewType     InterviewType
   language          Language
   candidateSummary  String?
+  candidateCvText   String?
   status            TargetStatus       @default(active)
   sessions          InterviewSession[]
   createdAt         DateTime           @default(now())
@@ -128,6 +129,8 @@ model InterviewTurn {
   questionText                 String
   questionType                 QuestionType
   answerTranscript             String?
+  rawTranscript                String?
+  transcriptCorrections        Json?
   durationSeconds              Int?
   speechRecognitionSource      SpeechRecognitionSource?
   speechRecognitionLanguage    String?
@@ -139,6 +142,12 @@ model InterviewTurn {
   speechPredictionLabel        String?
   speechPredictionModelName    String?
   speechPredictionModelVersion String?
+  nonverbalScore               Float?
+  nonverbalModelName           String?
+  nonverbalModelVersion        String?
+  nonverbalFeatures            Json?
+  nonverbalSource              String?
+  nonverbalError               String?
   evaluation                   AnswerEvaluation?
   createdAt                    DateTime                 @default(now())
   updatedAt                    DateTime                 @updatedAt
@@ -154,6 +163,7 @@ model AnswerEvaluation {
   answerScore         Int
   dimensionScores     Json
   speechMetrics       Json
+  nonverbalMetrics    Json?
   strengths           Json
   improvements        Json
   betterAnswerExample String

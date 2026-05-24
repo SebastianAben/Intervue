@@ -1,41 +1,154 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import type { HistorySessionSummary, TargetApplication } from '@intervue/shared';
 import { AppShell } from '@/components/layout/app-shell';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ScoreMeter } from '@/components/voice/score-meter';
 import { StatusChip } from '@/components/voice/status-chip';
-import { requireAuth } from '@/lib/auth-server';
-import { listTargets } from '@/lib/api-client';
-import { cookies } from 'next/headers';
+import { listHistory, listTargets } from '@/lib/api-client';
 
-export default async function DashboardPage() {
-  const user = await requireAuth();
-  const cookieHeader = (await cookies()).toString();
-  const targetResponse = await listTargets({ status: 'active', cookie: cookieHeader });
-  const activeTargets = targetResponse.data?.targets ?? [];
+type LoadState =
+  | { status: 'loading'; targets: TargetApplication[]; sessions: HistorySessionSummary[]; error: null }
+  | { status: 'ready'; targets: TargetApplication[]; sessions: HistorySessionSummary[]; error: null }
+  | { status: 'error'; targets: TargetApplication[]; sessions: HistorySessionSummary[]; error: string };
+
+function getSessionDate(session: HistorySessionSummary) {
+  return session.endedAt ?? session.updatedAt ?? session.createdAt;
+}
+
+function isWithinLastSevenDays(dateValue: string, now = new Date()) {
+  const date = new Date(dateValue);
+
+  if (Number.isNaN(date.getTime())) {
+    return false;
+  }
+
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(now.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+
+  return date >= sevenDaysAgo && date <= now;
+}
+
+function dateKey(dateValue: string) {
+  return new Date(dateValue).toISOString().slice(0, 10);
+}
+
+export default function DashboardPage() {
+  const [state, setState] = useState<LoadState>({
+    status: 'loading',
+    targets: [],
+    sessions: [],
+    error: null,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    Promise.all([listTargets({ status: 'active' }), listHistory()])
+      .then(([targetResponse, historyResponse]) => {
+        if (!isMounted) {
+          return;
+        }
+
+        if (targetResponse.error || historyResponse.error) {
+          setState({
+            status: 'error',
+            targets: targetResponse.data?.targets ?? [],
+            sessions: historyResponse.data?.sessions ?? [],
+            error:
+              targetResponse.error?.message ??
+              historyResponse.error?.message ??
+              'Dashboard belum bisa memuat data sesi.',
+          });
+          return;
+        }
+
+        setState({
+          status: 'ready',
+          targets: targetResponse.data.targets,
+          sessions: historyResponse.data.sessions,
+          error: null,
+        });
+      })
+      .catch(() => {
+        if (isMounted) {
+          setState({
+            status: 'error',
+            targets: [],
+            sessions: [],
+            error: 'Dashboard belum bisa memuat target aktif dan status sesi.',
+          });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const activeTargets = state.targets;
+  const sessions = state.sessions;
   const recentTargets = activeTargets.slice(0, 3);
+  const isLoading = state.status === 'loading';
+  const latestScoredSession = useMemo(
+    () =>
+      sessions.find(
+        (session) => session.status === 'completed' && session.overallScore !== null,
+      ),
+    [sessions],
+  );
+  const readinessScore = latestScoredSession?.overallScore ?? 0;
+  const consistencyScore = useMemo(() => {
+    const activeDayKeys = new Set(
+      sessions
+        .map(getSessionDate)
+        .filter((sessionDate) => isWithinLastSevenDays(sessionDate))
+        .map(dateKey),
+    );
+
+    return Math.min(100, Math.round((activeDayKeys.size / 5) * 100));
+  }, [sessions]);
+  const reportCount = sessions.filter((session) => session.hasReport).length;
 
   return (
     <AppShell
       activeHref="/dashboard"
       description="Ringkasan workspace latihan interview dan target lamaran aktif."
       title="Dashboard"
-      user={user}
     >
+      {state.error ? (
+        <Card className="mb-5 border-[#f4b8b8] bg-[#fff5f5] p-4 text-sm font-semibold text-[var(--danger)]">
+          {state.error}
+        </Card>
+      ) : null}
+
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <Card className="p-6">
+        <Card className="relative overflow-hidden rounded-[var(--radius-lg)] p-7">
+          <div className="absolute right-0 top-0 h-44 w-44 translate-x-16 -translate-y-16 rounded-full bg-[var(--accent)]/30 blur-3xl" />
           <Badge tone={activeTargets.length > 0 ? 'success' : 'primary'}>
-            {activeTargets.length > 0 ? `${activeTargets.length} target aktif` : 'Belum ada target'}
+            {isLoading
+              ? 'Memuat target'
+              : activeTargets.length > 0
+                ? `${activeTargets.length} target aktif`
+                : 'Belum ada target'}
           </Badge>
-          <h2 className="mt-5 font-[var(--font-jakarta)] text-2xl font-extrabold text-[var(--foreground)]">
-            {activeTargets.length > 0 ? 'Lanjutkan latihan berbasis target' : 'Buat target lamaran pertama'}
+          <h2 className="relative mt-5 max-w-2xl font-[var(--font-jakarta)] text-3xl font-black leading-tight tracking-[-0.03em] text-[var(--foreground)]">
+            {isLoading
+              ? 'Menyiapkan dashboard latihan'
+              : activeTargets.length > 0
+                ? 'Lanjutkan latihan berbasis target'
+                : 'Buat target lamaran pertama'}
           </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
+          <p className="relative mt-3 max-w-2xl text-sm leading-6 text-[var(--muted)]">
             {activeTargets.length > 0
               ? 'Pilih target lamaran aktif saat memulai sesi agar pertanyaan interview tetap relevan dengan posisi yang diincar.'
               : 'Target lamaran membuat pertanyaan interview lebih relevan dengan posisi, perusahaan, industri, dan skill yang ingin dilatih.'}
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="relative mt-7 flex flex-wrap gap-3">
             <Button href="/targets">
               {activeTargets.length > 0 ? 'Kelola Target Lamaran' : 'Buat Target Lamaran'}
             </Button>
@@ -45,41 +158,72 @@ export default async function DashboardPage() {
           </div>
         </Card>
 
-        <Card className="p-6">
+        <Card className="rounded-[var(--radius-lg)] p-6">
           <div className="flex items-center justify-between">
-            <h2 className="font-[var(--font-jakarta)] text-xl font-extrabold">Status sesi</h2>
+            <h2 className="font-[var(--font-jakarta)] text-xl font-black tracking-[-0.02em]">
+              Status sesi
+            </h2>
             <StatusChip status="ready" />
           </div>
           <div className="mt-6 space-y-5">
-            <ScoreMeter label="Kesiapan interview" value={0} />
-            <ScoreMeter label="Konsistensi latihan" value={0} />
+            <ScoreMeter
+              helperText={
+                latestScoredSession ? 'Berdasarkan sesi selesai terbaru' : 'Selesaikan sesi untuk melihat skor'
+              }
+              label="Kesiapan interview"
+              value={readinessScore}
+            />
+            <ScoreMeter
+              helperText={sessions.length > 0 ? '7 hari terakhir' : 'Mulai latihan untuk melihat progres'}
+              label="Konsistensi latihan"
+              value={consistencyScore}
+            />
           </div>
         </Card>
       </div>
 
-      <div className="mt-5 grid gap-5 md:grid-cols-3">
+      <div className="mt-6 overflow-hidden rounded-[var(--radius-lg)] border border-white/80 bg-white/72 shadow-[var(--shadow-card)] backdrop-blur">
         {[
           [
             'Target aktif',
-            String(activeTargets.length),
+            isLoading ? '...' : String(activeTargets.length),
             activeTargets.length > 0
               ? 'Target siap dipakai untuk simulasi interview.'
               : 'Tambahkan target sebelum simulasi penuh.',
           ],
-          ['Sesi latihan', '0', 'History akan muncul setelah interview.'],
-          ['Report tersimpan', '0', 'Report dibuat saat sesi selesai.'],
+          [
+            'Sesi latihan',
+            isLoading ? '...' : String(sessions.length),
+            sessions.length > 0 ? 'History sesi latihan sudah tersimpan.' : 'History akan muncul setelah interview.',
+          ],
+          [
+            'Report tersimpan',
+            isLoading ? '...' : String(reportCount),
+            reportCount > 0 ? 'Report deterministik siap dibuka.' : 'Report dibuat saat sesi selesai.',
+          ],
         ].map(([label, value, description]) => (
-          <Card className="p-5" key={label}>
+          <div
+            className="grid gap-3 border-b border-[var(--border)] p-5 last:border-b-0 sm:grid-cols-[180px_90px_1fr] sm:items-center"
+            key={label}
+          >
             <p className="text-sm font-bold text-[var(--muted)]">{label}</p>
-            <p className="mt-3 font-[var(--font-jakarta)] text-4xl font-extrabold text-[var(--primary)]">
+            <p className="font-[var(--font-geist-mono)] text-4xl font-semibold tabular-nums text-[var(--primary)]">
               {value}
             </p>
-            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{description}</p>
-          </Card>
+            <p className="text-sm leading-6 text-[var(--muted)]">{description}</p>
+          </div>
         ))}
       </div>
 
-      {recentTargets.length > 0 ? (
+      {isLoading ? (
+        <section className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {[0, 1, 2].map((item) => (
+            <Card className="h-44 animate-pulse rounded-[var(--radius-lg)] bg-white/60 p-5" key={item}>
+              <span className="sr-only">Memuat target</span>
+            </Card>
+          ))}
+        </section>
+      ) : recentTargets.length > 0 ? (
         <section className="mt-5">
           <div className="mb-3 flex items-center justify-between gap-3">
             <h2 className="font-[var(--font-jakarta)] text-xl font-extrabold text-[var(--foreground)]">
@@ -89,9 +233,12 @@ export default async function DashboardPage() {
               Lihat semua
             </Button>
           </div>
-          <div className="grid gap-5 md:grid-cols-3">
+          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {recentTargets.map((target) => (
-              <Card className="p-5" key={target.id}>
+              <Card
+                className="rounded-[var(--radius-lg)] p-5 transition-transform duration-300 hover:-translate-y-1"
+                key={target.id}
+              >
                 <div className="flex flex-wrap gap-2">
                   <Badge tone="success">Aktif</Badge>
                   <Badge>{target.interviewType}</Badge>
