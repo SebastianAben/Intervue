@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-const protectedRoutes = ['/dashboard', '/targets', '/interview', '/history', '/reports', '/settings'];
+const protectedRoutes = ['/dashboard', '/targets', '/interview', '/history', '/reports', '/settings', '/help'];
 
 export function proxy(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some((route) =>
@@ -31,5 +31,6 @@ export const config = {
     '/history/:path*',
     '/reports/:path*',
     '/settings/:path*',
+    '/help/:path*',
   ],
 };

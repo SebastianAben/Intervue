@@ -121,8 +121,13 @@ export function AppShell({
 
             <div className="flex w-full flex-col gap-1">
               <Link
-                className="flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-semibold leading-5 text-[var(--muted)] transition-colors hover:bg-[rgb(18_60_55_/_0.07)]"
-                href="/settings"
+                className={cn(
+                  'flex h-10 items-center gap-3 rounded-[var(--radius-sm)] px-3 text-sm font-semibold leading-5 transition-colors',
+                  activeHref === '/help'
+                    ? 'bg-[rgb(18_60_55_/_0.08)] text-[var(--foreground)]'
+                    : 'text-[var(--muted)] hover:bg-[rgb(18_60_55_/_0.07)]',
+                )}
+                href="/help"
               >
                 <SidebarIcon name="help" />
                 Bantuan
