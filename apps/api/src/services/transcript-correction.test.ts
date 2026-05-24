@@ -8,6 +8,7 @@ import {
 } from '@intervue/shared';
 
 const target: TargetApplication = {
+  candidateCvText: 'Competition project details mention LightGBM and feature stores.',
   candidateSummary:
     'Built a Fraud Classifier with Scikit-learn, XGBoost, SQL, and TensorFlow for risk analytics.',
   company: 'Tokopedia',

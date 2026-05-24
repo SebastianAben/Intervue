@@ -6,6 +6,7 @@ import {
   GeminiInterviewError,
   interviewQuestionSchema,
   parseGeminiJson,
+  targetContext,
 } from './gemini-interview.js';
 
 test('parseGeminiJson parses a valid interview question response', () => {
@@ -75,4 +76,28 @@ test('classifyGeminiHttpError maps missing model to model configuration failure'
 
   assert.equal(error.code, 'AI_EVALUATION_FAILED');
   assert.match(error.message, /GEMINI_MODEL/);
+});
+
+test('targetContext includes parsed CV reference when available', () => {
+  const context = targetContext({
+    id: 'target-1',
+    userId: 'user-1',
+    role: 'Product Manager',
+    company: 'Intervue',
+    industry: 'Technology',
+    level: 'junior',
+    jobDescription: 'Own interview preparation workflows.',
+    skillRequirements: 'Research, prioritization',
+    interviewType: 'behavioral',
+    language: 'id',
+    candidateSummary: '- Pernah membuat dashboard riset pengguna.',
+    candidateCvText: 'Full parsed CV text with project details and achievements.',
+    status: 'active',
+    createdAt: new Date('2026-05-24T00:00:00.000Z'),
+    updatedAt: new Date('2026-05-24T00:00:00.000Z'),
+  });
+
+  assert.match(context, /Candidate profile:/);
+  assert.match(context, /Detailed CV reference:/);
+  assert.match(context, /Full parsed CV text/);
 });

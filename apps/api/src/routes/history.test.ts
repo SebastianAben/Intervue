@@ -48,6 +48,7 @@ function createSession(targetApplicationId: string) {
       interviewType: 'technical',
       language: 'id',
       candidateSummary: null,
+      candidateCvText: null,
       status: 'active',
       createdAt: now,
       updatedAt: now,

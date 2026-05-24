@@ -143,6 +143,7 @@ function serializeTarget(target: TargetApplication) {
     interviewType: target.interviewType,
     language: target.language,
     candidateSummary: target.candidateSummary,
+    candidateCvText: target.candidateCvText,
     status: target.status,
     createdAt: target.createdAt.toISOString(),
     updatedAt: target.updatedAt.toISOString(),

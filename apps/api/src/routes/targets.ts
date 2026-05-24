@@ -5,6 +5,7 @@ import multer from 'multer';
 import { z } from 'zod';
 import { getRequestUser } from '../auth/session.js';
 import { prisma } from '../db/prisma.js';
+import { summarizeCvText } from '../services/cv-summary.js';
 import { CV_PDF_MAX_BYTES, CvPdfValidationError, parseCvPdf } from '../services/cv-pdf-parser.js';
 import { fail, ok } from '../utils/api-response.js';
 
@@ -35,6 +36,7 @@ const targetPayloadSchema = z.object({
   interviewType: z.enum(['hr', 'behavioral', 'technical', 'case', 'mixed']),
   language: z.enum(['id', 'en']),
   candidateSummary: optionalTextSchema,
+  candidateCvText: optionalTextSchema,
 });
 
 const targetPatchSchema = targetPayloadSchema.partial().refine((value) => Object.keys(value).length > 0, {
@@ -57,6 +59,7 @@ function serializeTarget(target: PrismaTargetApplication) {
     interviewType: target.interviewType,
     language: target.language,
     candidateSummary: target.candidateSummary,
+    candidateCvText: target.candidateCvText,
     status: target.status,
     createdAt: target.createdAt.toISOString(),
     updatedAt: target.updatedAt.toISOString(),
@@ -152,8 +155,17 @@ targetsRouter.post('/parse-cv', async (request, response, next) => {
 
     await parseCvUpload(request, response);
     const parsed = await parseCvPdf(request.file);
+    const summary = await summarizeCvText(parsed.text);
 
-    response.json(ok(parsed));
+    response.json(
+      ok({
+        characterCount: parsed.characterCount,
+        parsedText: parsed.text,
+        summary: summary.summary,
+        summaryGenerated: summary.summaryGenerated,
+        truncated: parsed.truncated,
+      }),
+    );
   } catch (error) {
     if (error instanceof CvPdfValidationError) {
       response.status(400).json(fail('VALIDATION_ERROR', error.message));

@@ -57,6 +57,7 @@ export type TargetApplication = {
   interviewType: InterviewType;
   language: Language;
   candidateSummary: string | null;
+  candidateCvText: string | null;
   status: TargetStatus;
   createdAt: string;
   updatedAt: string;
@@ -72,6 +73,7 @@ export type TargetApplicationPayload = {
   interviewType: InterviewType;
   language: Language;
   candidateSummary?: string | null;
+  candidateCvText?: string | null;
 };
 
 export type TargetListResponse = ApiResponse<{
@@ -83,9 +85,11 @@ export type TargetDetailResponse = ApiResponse<{
 }>;
 
 export type ParseCvResponse = ApiResponse<{
-  text: string;
+  summary: string;
+  parsedText: string;
   characterCount: number;
   truncated: boolean;
+  summaryGenerated: boolean;
 }>;
 
 export type SessionMode = 'practice' | 'full_simulation';
@@ -300,7 +304,10 @@ function sourceTexts(target: TargetApplication) {
     { source: 'industry' as const, text: target.industry },
     { source: 'job_description' as const, text: target.jobDescription ?? '' },
     { source: 'skills' as const, text: target.skillRequirements ?? '' },
-    { source: 'candidate' as const, text: target.candidateSummary ?? '' },
+    {
+      source: 'candidate' as const,
+      text: [target.candidateSummary, target.candidateCvText].filter(Boolean).join(' '),
+    },
   ];
 }
 

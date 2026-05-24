@@ -90,6 +90,7 @@ model TargetApplication {
   interviewType     InterviewType
   language          Language
   candidateSummary  String?
+  candidateCvText   String?
   status            TargetStatus       @default(active)
   sessions          InterviewSession[]
   createdAt         DateTime           @default(now())

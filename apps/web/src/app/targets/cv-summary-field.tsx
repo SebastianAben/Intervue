@@ -11,8 +11,15 @@ type UploadState =
   | { status: 'success'; message: string }
   | { status: 'error'; message: string };
 
-export function CvSummaryField({ defaultValue = '' }: { defaultValue?: string | null }) {
+export function CvSummaryField({
+  defaultCvText = '',
+  defaultValue = '',
+}: {
+  defaultCvText?: string | null;
+  defaultValue?: string | null;
+}) {
   const [summary, setSummary] = useState(defaultValue ?? '');
+  const [cvText, setCvText] = useState(defaultCvText ?? '');
   const [uploadState, setUploadState] = useState<UploadState>({
     status: 'idle',
     message: null,
@@ -39,7 +46,7 @@ export function CvSummaryField({ defaultValue = '' }: { defaultValue?: string | 
 
     const formData = new FormData();
     formData.append('cv', file);
-    setUploadState({ status: 'loading', message: 'Membaca CV...' });
+    setUploadState({ status: 'loading', message: 'Membaca dan merangkum CV...' });
 
     try {
       const result = await parseCv(formData);
@@ -52,12 +59,15 @@ export function CvSummaryField({ defaultValue = '' }: { defaultValue?: string | 
         return;
       }
 
-      setSummary(result.data.text);
+      setSummary(result.data.summary);
+      setCvText(result.data.parsedText);
       setUploadState({
         status: 'success',
-        message: result.data.truncated
-          ? `CV berhasil dibaca (${result.data.characterCount} karakter, dipotong agar ringkas).`
-          : `CV berhasil dibaca (${result.data.characterCount} karakter).`,
+        message: result.data.summaryGenerated
+          ? result.data.truncated
+            ? `CV berhasil diringkas dengan AI (${result.data.characterCount} karakter, dipotong agar ringkas).`
+            : `CV berhasil diringkas dengan AI (${result.data.characterCount} karakter).`
+          : 'CV berhasil dibaca, tetapi ringkasan AI belum tersedia. Teks parsing dimasukkan sebagai fallback.',
       });
     } catch {
       setUploadState({
@@ -88,6 +98,7 @@ export function CvSummaryField({ defaultValue = '' }: { defaultValue?: string | 
           placeholder="Tulis ringkasan pengalaman, proyek, atau pencapaian yang relevan di sini."
           value={summary}
         />
+        <input name="candidateCvText" type="hidden" value={cvText} />
         <div className="mt-4 flex flex-col gap-3 border-t border-[#e5e5e5] pt-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <button
@@ -128,7 +139,7 @@ export function CvSummaryField({ defaultValue = '' }: { defaultValue?: string | 
         </div>
       </div>
       <p className="mt-2 text-center text-xs leading-4 text-[var(--muted)]">
-        AI akan membaca ringkasan ini untuk menyesuaikan pertanyaan seputar pengalaman masa lalu.
+        AI akan membaca ringkasan dan konteks CV untuk menyesuaikan pertanyaan seputar pengalaman masa lalu.
       </p>
     </section>
   );

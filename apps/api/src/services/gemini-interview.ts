@@ -138,7 +138,7 @@ const evaluationResponseJsonSchema = {
   required: ['answerScore', 'dimensionScores', 'strengths', 'improvements', 'betterAnswerExample'],
 } as const;
 
-function targetContext(target: TargetApplication) {
+export function targetContext(target: TargetApplication) {
   return [
     `Role: ${target.role}`,
     `Company: ${target.company ?? 'Not provided'}`,
@@ -149,6 +149,7 @@ function targetContext(target: TargetApplication) {
     `Job description: ${target.jobDescription ?? 'Not provided'}`,
     `Skills: ${target.skillRequirements ?? 'Not provided'}`,
     `Candidate profile: ${target.candidateSummary ?? 'Not provided'}`,
+    `Detailed CV reference: ${target.candidateCvText ?? 'Not provided'}`,
   ].join('\n');
 }
 

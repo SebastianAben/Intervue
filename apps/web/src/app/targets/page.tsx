@@ -56,6 +56,7 @@ function payloadFromFormData(formData: FormData): TargetApplicationPayload {
     interviewType: String(formData.get('interviewType') ?? 'mixed') as InterviewType,
     language: String(formData.get('language') ?? 'id') as Language,
     candidateSummary: optionalText(formData, 'candidateSummary'),
+    candidateCvText: optionalText(formData, 'candidateCvText'),
   };
 }
 
@@ -246,7 +247,7 @@ function TargetForm({
           />
         </Field>
 
-        <CvSummaryField defaultValue={target?.candidateSummary} />
+        <CvSummaryField defaultCvText={target?.candidateCvText} defaultValue={target?.candidateSummary} />
 
         <div className="flex justify-end gap-4 border-t border-[#e5e5e5] pt-[17px]">
           <Button href="/targets" type="button" variant="ghost">
@@ -254,7 +255,11 @@ function TargetForm({
           </Button>
           <Button className="px-8" isLoading={isSubmitting} type="submit">
             {submitLabel}
-            {mode === 'create' ? <span aria-hidden="true">-&gt;</span> : null}
+            {mode === 'create' ? (
+              <span aria-hidden="true" className="ml-1.5">
+                -&gt;
+              </span>
+            ) : null}
           </Button>
         </div>
       </div>

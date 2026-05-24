@@ -72,6 +72,7 @@ function serializeSessionDetail(
       interviewType: session.targetApplication.interviewType,
       language: session.targetApplication.language,
       candidateSummary: session.targetApplication.candidateSummary,
+      candidateCvText: session.targetApplication.candidateCvText,
       status: session.targetApplication.status,
       createdAt: session.targetApplication.createdAt.toISOString(),
       updatedAt: session.targetApplication.updatedAt.toISOString(),
