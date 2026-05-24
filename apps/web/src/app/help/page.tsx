@@ -95,10 +95,17 @@ export default function HelpPage() {
               </h2>
             </div>
             <div className="mt-7 flex flex-col gap-3">
-              <Button className="w-full bg-white text-[var(--primary)] hover:bg-[var(--surface-muted)]" href="/targets">
+              <Button
+                className="w-full !bg-white !text-[var(--primary)] hover:!bg-[var(--surface-muted)]"
+                href="/targets"
+              >
                 Buat Target Lamaran
               </Button>
-              <Button className="w-full border-white/35 bg-white/10 text-white hover:bg-white/16" href="/interview" variant="outline">
+              <Button
+                className="w-full !border-white/35 !bg-white/10 !text-white hover:!bg-white/16"
+                href="/interview"
+                variant="outline"
+              >
                 Mulai Latihan
               </Button>
             </div>

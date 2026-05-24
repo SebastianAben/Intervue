@@ -60,8 +60,8 @@ export function AppShell({
   const displayName = shellUser?.name ?? (auth.isLoading ? 'Memuat akun...' : 'Pengguna');
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--background)] lg:grid lg:h-[100dvh] lg:grid-cols-[280px_minmax(0,1fr)] lg:overflow-hidden">
-      <aside className="hidden min-h-[100dvh] flex-col border-r border-white/80 bg-white/72 p-4 shadow-[0_20px_70px_rgb(18_60_55_/_0.08)] backdrop-blur lg:flex lg:h-[100dvh] lg:min-h-0">
+    <div className="min-h-[100dvh] bg-[var(--background)] lg:grid lg:h-[100dvh] lg:min-h-0 lg:grid-cols-[280px_minmax(0,1fr)] lg:overflow-hidden">
+      <aside className="hidden min-h-[100dvh] flex-col border-r border-white/80 bg-white/72 p-4 shadow-[0_20px_70px_rgb(18_60_55_/_0.08)] backdrop-blur lg:flex lg:h-full lg:min-h-0">
         <div className="w-full pb-6 pt-[7px]">
           <Link
             className="flex w-fit items-center rounded-[var(--radius-sm)] px-4 py-3 transition-colors hover:bg-[rgb(18_60_55_/_0.06)]"
@@ -144,7 +144,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <div className="min-w-0 pb-20 lg:h-screen lg:overflow-y-auto lg:pb-0">
+      <div className="min-w-0 pb-20 lg:h-full lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:pb-0">
         <header className="sticky top-0 z-20 border-b border-white/80 bg-[rgb(245_247_244_/_0.9)] px-5 py-4 backdrop-blur lg:hidden">
           <div className="flex items-center justify-between">
             <Link className="flex items-center" href="/">
